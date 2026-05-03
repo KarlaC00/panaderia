@@ -1,27 +1,7 @@
 # MAXIPAN — Guía de instalación y arranque
 
 ## PASO 1 — Instalar dependencias del sistema
-
-Ejecuta estos comandos en orden en tu terminal (Ubuntu/Debian):
-
 ```bash
-# Node.js v20 LTS
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Verificar
-node -v   # debe mostrar v20.x.x
-npm -v
-
-# MySQL 8
-sudo apt update
-sudo apt install -y mysql-server
-sudo systemctl start mysql
-sudo systemctl enable mysql
-
-# Asegurar MySQL (crea contraseña root)
-sudo mysql_secure_installation
-
 # RabbitMQ
 sudo apt install -y rabbitmq-server
 sudo systemctl start rabbitmq-server
@@ -37,20 +17,7 @@ sudo rabbitmq-plugins enable rabbitmq_management
 ## PASO 2 — Crear bases de datos y usuario MySQL
 
 ```bash
-# Entrar a MySQL como root
-sudo mysql -u root
-
-# Dentro de MySQL ejecuta:
-CREATE DATABASE ms_auth     CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE DATABASE ms_ventas   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE DATABASE ms_inventario CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-CREATE USER 'maxipan'@'localhost' IDENTIFIED BY 'maxipan_dev_2026';
-GRANT ALL PRIVILEGES ON ms_auth.* TO 'maxipan'@'localhost';
-GRANT ALL PRIVILEGES ON ms_ventas.* TO 'maxipan'@'localhost';
-GRANT ALL PRIVILEGES ON ms_inventario.* TO 'maxipan'@'localhost';
-FLUSH PRIVILEGES;
-EXIT;
+se hace con postgres
 ```
 
 ---
