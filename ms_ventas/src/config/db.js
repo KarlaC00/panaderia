@@ -22,4 +22,4 @@ pool.on('error', (err) => {
   console.error('❌ [DB] Error inesperado en el pool de Postgres', err);
 });
 
-module.exports = pool;npm install pg
+module.exports = pool;

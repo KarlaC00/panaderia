@@ -17,15 +17,36 @@ app.get('/health', (req, res) => res.json({ servicio: 'ms_auth', estado: 'ok' })
 // ── 404 ────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 
+// ── Limpieza de refresh tokens expirados ───────────────────────
+const limpiarTokensExpirados = async () => {
+  try {
+    const result = await pool.query(
+      'DELETE FROM refresh_token WHERE expira_en < NOW()'
+    );
+    if (result.rowCount > 0) {
+      console.log(`[ms_auth] ✓ Tokens expirados eliminados: ${result.rowCount}`);
+    }
+  } catch (err) {
+    console.error('[ms_auth] ✗ Error al limpiar tokens expirados:', err.message);
+  }
+};
+
 // ── Iniciar servidor ───────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, async () => {
   try {
     await pool.query('SELECT 1');
     console.log(`[ms_auth] ✓ Servidor corriendo en http://localhost:${PORT}`);
-    console.log(`[ms_auth] ✓ Conectado a MySQL - base de datos: ${process.env.DB_NAME}`);
+    console.log(`[ms_auth] ✓ Conectado a PostgreSQL - base de datos: ${process.env.DB_NAME}`);
+
+    // Limpieza inmediata al iniciar
+    await limpiarTokensExpirados();
+
+    // Limpieza programada cada hora
+    setInterval(limpiarTokensExpirados, 60 * 60 * 1000);
+
   } catch (err) {
-    console.error('[ms_auth] ✗ Error al conectar con MySQL:', err.message);
+    console.error('[ms_auth] ✗ Error al conectar con PostgreSQL:', err.message);
     process.exit(1);
   }
 });
