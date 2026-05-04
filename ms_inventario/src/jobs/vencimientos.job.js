@@ -1,49 +1,43 @@
 const cron = require('node-cron');
 const pool = require('../config/db');
 
-/**
- * Cron job que se ejecuta cada día a las 6am.
- * Verifica lotes próximos a vencer y genera alertas automáticas.
- */
 const iniciarJobVencimientos = () => {
   cron.schedule('0 6 * * *', async () => {
-    console.log('[inventario] ⏰ Ejecutando verificación de lotes por vencer...');
+    console.log('[inventario] Ejecutando verificación de lotes por vencer...');
 
     const diasAlerta = parseInt(process.env.DIAS_ALERTA_VENCIMIENTO || '5');
 
     try {
-      // Lotes próximos a vencer (dentro de X días) con stock disponible
-      const [lotesPorVencer] = await pool.query(
+      const lotesPorVencer = await pool.query(
         `SELECT l.id, l.insumo_id, l.numero_lote, l.fecha_vencimiento
          FROM lote l
-         WHERE l.bloqueado = 0
+         WHERE l.bloqueado = false
            AND l.cantidad_disponible > 0
-           AND DATEDIFF(l.fecha_vencimiento, CURDATE()) BETWEEN 0 AND ?`,
+           AND (l.fecha_vencimiento::date - CURRENT_DATE) BETWEEN 0 AND $1`,
         [diasAlerta]
       );
 
-      for (const lote of lotesPorVencer) {
-        // Verificar si ya existe alerta activa para este lote
-        const [existe] = await pool.query(
-          "SELECT id FROM alerta WHERE insumo_id = ? AND tipo = 'lote_por_vencer' AND resuelta = 0",
+      for (const lote of lotesPorVencer.rows) {
+        const existe = await pool.query(
+          `SELECT id FROM alerta
+           WHERE insumo_id = $1 AND tipo = 'lote_por_vencer' AND resuelta = false`,
           [lote.insumo_id]
         );
-        if (existe.length === 0) {
+        if (existe.rows.length === 0) {
           await pool.query(
-            "INSERT INTO alerta (insumo_id, tipo) VALUES (?, 'lote_por_vencer')",
+            `INSERT INTO alerta (insumo_id, tipo) VALUES ($1, 'lote_por_vencer')`,
             [lote.insumo_id]
           );
           console.log(`[inventario] ⚠ Alerta lote por vencer: ${lote.numero_lote} (insumo ${lote.insumo_id})`);
         }
       }
 
-      // Bloquear lotes vencidos automáticamente
       await pool.query(
-        "UPDATE lote SET bloqueado = 1 WHERE fecha_vencimiento < CURDATE() AND bloqueado = 0"
+        `UPDATE lote SET bloqueado = true
+         WHERE fecha_vencimiento < CURRENT_DATE AND bloqueado = false`
       );
 
-      console.log(`[inventario] ✓ Verificación completada. ${lotesPorVencer.length} lotes próximos a vencer.`);
-
+      console.log(`[inventario] ✓ Verificación completada. ${lotesPorVencer.rows.length} lotes próximos a vencer.`);
     } catch (err) {
       console.error('[inventario] Error en job de vencimientos:', err.message);
     }
