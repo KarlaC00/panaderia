@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import Ventas from './pages/Ventas';
 import Inventario from './pages/Inventario';
 import Navbar from './components/Navbar';
+import GestionUsuarios from './pages/GestionUsuarios';
 
 function App() {
   return (
@@ -24,14 +25,20 @@ function App() {
           </Route>
 
           {/* Rutas Solo para Vendedores o Admin */}
-          <Route element={<ProtectedRoute allowedRoles={['admin', 'vendedor']} />}>
+          <Route element={<ProtectedRoute allowedRoles={['administrador', 'vendedor']} />}>
             <Route path="/ventas" element={<Ventas />} />
           </Route>
 
           {/* Rutas Solo para Admin (Gestión de Inventario/Panadería) */}
-          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+          <Route element={<ProtectedRoute allowedRoles={['administrador']} />}>
             <Route path="/inventario" element={<Inventario />} />
           </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={['administrador']} />}>
+          <Route path="/usuarios" element={<GestionUsuarios />} />
+          <Route path="/inventario" element={<Inventario />} />
+          </Route>
+
 
           {/* Redirección por defecto */}
           <Route path="*" element={<Navigate to="/login" replace />} />
