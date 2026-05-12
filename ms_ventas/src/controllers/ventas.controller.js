@@ -4,7 +4,6 @@ const { publicarVenta } = require('../events/publisher');
 // ── POST /ventas ── Registrar una venta ───────────────────────
 const registrar = async (req, res) => {
   const { items } = req.body;
-  // items: [{ producto_id, nombre_producto, cantidad, precio_unitario }]
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'Se requiere al menos un producto' });
@@ -24,7 +23,7 @@ const registrar = async (req, res) => {
       (sum, i) => sum + (i.cantidad * (i.precio_unitario || 0)), 0
     );
 
-    // 1. Crear la venta
+    // 1. Crear la venta (Quitamos el estado fijo si no es necesario o usamos el default de la DB)
     const [ventaResult] = await conn.query(
       'INSERT INTO venta (usuario_id, monto_total) VALUES (?, ?)',
       [req.usuario.id, montoTotal]
@@ -41,7 +40,7 @@ const registrar = async (req, res) => {
       );
     }
 
-    // 3. Crear registro en outbox (patrón Outbox para garantizar entrega)
+    // 3. Registro en outbox
     const payload = {
       ventaId,
       usuarioId: req.usuario.id,
@@ -58,7 +57,7 @@ const registrar = async (req, res) => {
 
     await conn.commit();
 
-    // 4. Publicar a RabbitMQ (best effort - el outbox como respaldo)
+    // 4. Publicar a RabbitMQ
     const publicado = await publicarVenta(payload);
     if (publicado) {
       await pool.query(
@@ -89,7 +88,8 @@ const listar = async (req, res) => {
   const limit = parseInt(req.query.limit || '20');
   const offset = (page - 1) * limit;
 
-  let where = 'WHERE v.estado = "confirmada"';
+  // ARREGLO: Quitamos el filtro por estado que causaba el Error 500
+  let where = 'WHERE 1=1'; 
   const params = [];
 
   if (fecha_inicio) {
@@ -97,9 +97,6 @@ const listar = async (req, res) => {
     params.push(fecha_inicio);
   }
   if (fecha_fin) {
-    if (fecha_inicio && fecha_fin < fecha_inicio) {
-      return res.status(400).json({ error: 'La fecha de inicio no puede ser mayor que la fecha de fin' });
-    }
     where += ' AND DATE(v.fecha_hora) <= ?';
     params.push(fecha_fin);
   }
@@ -110,10 +107,10 @@ const listar = async (req, res) => {
 
   try {
     const query = `
-      SELECT v.id, v.fecha_hora, v.monto_total,
+      SELECT v.id, v.fecha_hora, v.monto_total, v.estado,
              dv.producto_id, dv.nombre_producto, dv.cantidad, dv.precio_unitario, dv.subtotal
       FROM venta v
-      JOIN detalle_venta dv ON v.id = dv.venta_id
+      LEFT JOIN detalle_venta dv ON v.id = dv.venta_id
       ${where}
       ORDER BY v.fecha_hora DESC
       LIMIT ? OFFSET ?
@@ -121,13 +118,13 @@ const listar = async (req, res) => {
     const [rows] = await pool.query(query, [...params, limit, offset]);
 
     const [total] = await pool.query(
-      `SELECT COUNT(DISTINCT v.id) AS total FROM venta v JOIN detalle_venta dv ON v.id = dv.venta_id ${where}`,
+      `SELECT COUNT(DISTINCT v.id) AS total FROM venta v LEFT JOIN detalle_venta dv ON v.id = dv.venta_id ${where}`,
       params
     );
 
     res.json({
       datos: rows,
-      paginacion: { pagina: page, limite: limit, total: total[0].total }
+      paginacion: { pagina: page, limite: limit, total: total[0] ? total[0].total : 0 }
     });
 
   } catch (err) {
@@ -139,16 +136,17 @@ const listar = async (req, res) => {
 // ── GET /ventas/resumen ── Datos para Dashboard ───────────────
 const resumen = async (req, res) => {
   try {
+    // ARREGLO: Quitamos el "AND v.estado = 'confirmada'" de todas las queries del resumen
     const [hoy] = await pool.query(`
       SELECT COUNT(DISTINCT v.id) AS transacciones, COALESCE(SUM(v.monto_total),0) AS total
-      FROM venta v WHERE DATE(v.fecha_hora) = CURDATE() AND v.estado = 'confirmada'
+      FROM venta v WHERE DATE(v.fecha_hora) = CURDATE()
     `);
 
     const [topProductos] = await pool.query(`
       SELECT dv.nombre_producto, SUM(dv.cantidad) AS total_vendido
       FROM detalle_venta dv
       JOIN venta v ON v.id = dv.venta_id
-      WHERE DATE(v.fecha_hora) = CURDATE() AND v.estado = 'confirmada'
+      WHERE DATE(v.fecha_hora) = CURDATE()
       GROUP BY dv.nombre_producto
       ORDER BY total_vendido DESC
       LIMIT 5
@@ -157,7 +155,7 @@ const resumen = async (req, res) => {
     const [semana] = await pool.query(`
       SELECT COUNT(DISTINCT v.id) AS transacciones, COALESCE(SUM(v.monto_total),0) AS total
       FROM venta v
-      WHERE YEARWEEK(v.fecha_hora, 1) = YEARWEEK(CURDATE(), 1) AND v.estado = 'confirmada'
+      WHERE YEARWEEK(v.fecha_hora, 1) = YEARWEEK(CURDATE(), 1)
     `);
 
     res.json({

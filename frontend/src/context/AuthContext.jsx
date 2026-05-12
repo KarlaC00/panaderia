@@ -1,29 +1,38 @@
-import { createContext, useState, useEffect } from "react";
+// ─────────────────────────────────────────────────────────────
+//  AuthContext.jsx  –  Estado global de autenticación
+//  UBICACIÓN: frontend/src/context/AuthContext.jsx
+// ─────────────────────────────────────────────────────────────
+import { createContext, useState, useEffect } from 'react';
+import { logoutService } from '../services/authService';
 
 export const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+export function AuthProvider({ children }) {
+  const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Al arrancar la app, restaurar sesión si existe en localStorage
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
+    const savedUser = localStorage.getItem('user');
+    const token     = localStorage.getItem('token');
     if (savedUser && token) {
       setUser(JSON.parse(savedUser));
     }
     setLoading(false);
   }, []);
 
+  // Guardar sesión después del login
   const login = (data) => {
-    // Guardamos los datos que vienen de tu controlador
+    // data = { accessToken, refreshToken, usuario: { id, nombre, rol } }
     setUser(data.usuario);
-    localStorage.setItem("user", JSON.stringify(data.usuario));
-    localStorage.setItem("token", data.accessToken);
-    localStorage.setItem("refreshToken", data.refreshToken);
+    localStorage.setItem('user',         JSON.stringify(data.usuario));
+    localStorage.setItem('token',        data.accessToken);
+    localStorage.setItem('refreshToken', data.refreshToken);
   };
 
-  const logout = () => {
+  // Cerrar sesión: primero invalidar en backend, luego limpiar local
+  const logout = async () => {
+    await logoutService();   // ← llama POST /auth/logout en el backend
     setUser(null);
     localStorage.clear();
   };
@@ -33,4 +42,4 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-};
+}
