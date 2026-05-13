@@ -103,7 +103,6 @@ module.exports = {
   listar,
   crearProducto,
   crearInsumo,
-  eliminarProducto,
   eliminarInsumo,
   actualizarStockMinimo,
   cambiarEstado  

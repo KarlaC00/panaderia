@@ -13,17 +13,18 @@ router.get('/inventario',                                inv.listar);
 router.post('/inventario/productos',     soloAdmin,      inv.crearProducto);
 router.post('/inventario/insumos',       soloAdmin,      inv.crearInsumo);
 router.delete('/inventario/insumos/:id', soloAdmin,      inv.eliminarInsumo);
-router.delete('/inventario/productos/:id', soloAdmin,    inv.eliminarProducto);
 router.patch('/inventario/:id/stock-minimo', soloAdmin,  inv.actualizarStockMinimo);
 router.patch('/inventario/:id/estado',   soloAdmin,      inv.cambiarEstado);
 
 // ── Recetas ─────────────────────────────────────────────────────
-router.get('/recetas/:productoId',       rec.obtener);
-router.post('/recetas',      soloAdmin,  rec.crear);
+router.get('/recetas',                        rec.listar);
+router.get('/recetas/:productoId',            rec.obtener);
+router.post('/recetas',          soloAdmin,   rec.crear);
+router.put('/recetas/:productoId', soloAdmin, rec.actualizar);
 
 // ── Lotes ───────────────────────────────────────────────────────
 router.get('/lotes',                     lot.listar);
-router.post('/lotes',                    lot.registrar); // ← admin y empleado
+router.post('/lotes',                    lot.registrar);
 
 // ── Alertas ─────────────────────────────────────────────────────
 router.get('/alertas',                   ale.listarActivas);

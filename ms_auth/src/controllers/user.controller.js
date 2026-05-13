@@ -36,20 +36,31 @@ const crear = async (req, res) => {
     const { nombre, correo, contrasena } = req.body;
     let { rol } = req.body;
 
-    // Detectamos si la petición viene de la ruta pública de admin o de la protegida
-    // Si viene de /registro-admin, forzamos el rol a 'administrador'
     const esRutaAdminPublica = req.baseUrl + req.path === '/usuarios/registro-admin';
 
     if (esRutaAdminPublica) {
         rol = 'administrador';
     } else {
-        // Si no es la ruta pública, el middleware 'verificarToken' ya validó que quien pide esto es Admin.
-        // Aquí permitimos que el Admin decida el rol, o forzamos a 'empleado' según tu preferencia.
-        if (!rol) rol = 'empleado'; 
+        if (!rol) rol = 'empleado';
     }
 
     if (!nombre || !correo || !contrasena || !rol) {
         return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+    }
+
+    // Validación de tipos y longitud
+    if (typeof nombre !== 'string' || typeof correo !== 'string' || typeof contrasena !== 'string') {
+        return res.status(400).json({ error: 'Formato de datos inválido' });
+    }
+    if (nombre.length > 100 || correo.length > 254 || contrasena.length > 128) {
+        return res.status(400).json({ error: 'Datos demasiado largos' });
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(correo)) {
+        return res.status(400).json({ error: 'Formato de correo inválido' });
+    }
+    if (contrasena.length < 6) {
+        return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
     }
 
     if (!['administrador', 'empleado'].includes(rol)) {
@@ -80,6 +91,14 @@ const crear = async (req, res) => {
 const actualizar = async (req, res) => {
     const { id } = req.params;
     const { nombre, rol } = req.body;
+
+    // Validar que id sea un número entero
+    if (!Number.isInteger(Number(id)) || Number(id) <= 0) {
+        return res.status(400).json({ error: 'ID de usuario inválido' });
+    }
+    if (nombre !== undefined && (typeof nombre !== 'string' || nombre.length > 100 || nombre.trim() === '')) {
+        return res.status(400).json({ error: 'Nombre inválido' });
+    }
 
     try {
         const campos = [];

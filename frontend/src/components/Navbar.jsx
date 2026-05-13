@@ -8,6 +8,10 @@ export default function Navbar() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // No mostrar navbar en la página de login (con o sin sesión)
+  if (location.pathname === '/login') return null;
+
+  // No mostrar navbar si no hay sesión
   if (!user) return null;
 
   const handleLogout = () => {
@@ -15,9 +19,9 @@ export default function Navbar() {
     navigate('/login');
   };
 
-const isActive = (path) =>
-  location.pathname === path ||
-  location.pathname.startsWith(path + '/');
+  const isActive = (path) =>
+    location.pathname === path ||
+    location.pathname.startsWith(path + '/');
 
   const getInitials = (nombre) =>
     nombre
@@ -25,21 +29,21 @@ const isActive = (path) =>
       : 'U';
 
   const NavLink = ({ to, children, highlight }) => (
-  <Link
-    to={to}
-    onClick={() => setMobileOpen(false)}
-    className={[
-      'flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all',
-      highlight
-        ? 'bg-[#F97316] text-white hover:bg-[#EA580C]'
-        : isActive(to)
-          ? 'bg-[#FFF7ED] text-[#C2410C]'
-          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
-    ].join(' ')}
-  >
-    {children}
-  </Link>
-);
+    <Link
+      to={to}
+      onClick={() => setMobileOpen(false)}
+      className={[
+        'flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all',
+        highlight
+          ? 'bg-[#F97316] text-white hover:bg-[#EA580C]'
+          : isActive(to)
+            ? 'bg-[#FFF7ED] text-[#C2410C]'
+            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+      ].join(' ')}
+    >
+      {children}
+    </Link>
+  );
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">

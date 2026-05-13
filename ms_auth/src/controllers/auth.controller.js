@@ -23,8 +23,20 @@ const generarTokens = (usuario) => {
 const login = async (req, res) => {
   const { correo, contrasena } = req.body;
 
+  // Validación de tipos y longitud (previene payloads maliciosos)
   if (!correo || !contrasena) {
     return res.status(400).json({ error: 'Correo y contraseña son obligatorios' });
+  }
+  if (typeof correo !== 'string' || typeof contrasena !== 'string') {
+    return res.status(400).json({ error: 'Formato de datos inválido' });
+  }
+  if (correo.length > 254 || contrasena.length > 128) {
+    return res.status(400).json({ error: 'Datos demasiado largos' });
+  }
+  // Validación básica de formato de correo
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(correo)) {
+    return res.status(400).json({ error: 'Formato de correo inválido' });
   }
 
   try {
@@ -52,7 +64,6 @@ const login = async (req, res) => {
       [usuario.id, refreshTokenHash, expira]
     );
 
-    // Limpiar tokens expirados del usuario (mantenimiento pasivo)
     await pool.query(
       'DELETE FROM refresh_token WHERE usuario_id = $1 AND expira_en < NOW()',
       [usuario.id]
@@ -151,6 +162,9 @@ const cambiarContrasena = async (req, res) => {
   if (!contrasenaActual || !contrasenaNueva) {
     return res.status(400).json({ error: 'contrasenaActual y contrasenaNueva son obligatorios' });
   }
+  if (typeof contrasenaActual !== 'string' || typeof contrasenaNueva !== 'string') {
+    return res.status(400).json({ error: 'Formato de datos inválido' });
+  }
   if (contrasenaNueva.length < 6) {
     return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
   }
@@ -173,7 +187,6 @@ const cambiarContrasena = async (req, res) => {
       [hash, usuario.id]
     );
 
-    // Invalidar todos los refresh tokens → forzar re-login
     await pool.query(
       'UPDATE refresh_token SET invalidado = true WHERE usuario_id = $1',
       [usuario.id]
