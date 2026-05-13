@@ -9,59 +9,57 @@ const registrar = async (req, res) => {
     return res.status(400).json({ error: 'Se requiere al menos un producto' });
   }
 
-  for (const item of items) {
-    if (!item.producto_id || !item.cantidad || item.cantidad <= 0) {
-      return res.status(400).json({ error: 'Cada item debe tener producto_id y cantidad mayor a 0' });
-    }
-  }
+  // En Postgres se usa pool.connect() para transacciones
+  const conn = await pool.connect(); 
 
-  const conn = await pool.getConnection();
   try {
-    await conn.beginTransaction();
+    await conn.query('BEGIN'); // Iniciar transacción
 
     const montoTotal = items.reduce(
       (sum, i) => sum + (i.cantidad * (i.precio_unitario || 0)), 0
     );
 
-    // 1. Crear la venta (Quitamos el estado fijo si no es necesario o usamos el default de la DB)
-    const [ventaResult] = await conn.query(
-      'INSERT INTO venta (usuario_id, monto_total) VALUES (?, ?)',
-      [req.usuario.id, montoTotal]
-    );
-    const ventaId = ventaResult.insertId;
+    // 1. Crear la venta (Postgres usa $1, $2 y RETURNING id)
+    const ventaQuery = 'INSERT INTO venta (usuario_id, monto_total) VALUES ($1, $2) RETURNING id';
+    const ventaResult = await conn.query(ventaQuery, [req.usuario.id, montoTotal]);
+    const ventaId = ventaResult.rows[0].id;
 
     // 2. Insertar detalles
     for (const item of items) {
       const subtotal = item.cantidad * (item.precio_unitario || 0);
-      await conn.query(
-        `INSERT INTO detalle_venta (venta_id, producto_id, nombre_producto, cantidad, precio_unitario, subtotal)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [ventaId, item.producto_id, item.nombre_producto || '', item.cantidad, item.precio_unitario || 0, subtotal]
-      );
+      const detalleQuery = `
+        INSERT INTO detalle_venta (venta_id, producto_id, nombre_producto, cantidad, precio_unitario, subtotal)
+        VALUES ($1, $2, $3, $4, $5, $6)
+      `;
+      await conn.query(detalleQuery, [
+        ventaId, 
+        item.producto_id, 
+        item.nombre_producto || '', 
+        item.cantidad, 
+        item.precio_unitario || 0, 
+        subtotal
+      ]);
     }
 
-    // 3. Registro en outbox
+    // 3. Registro en outbox para RabbitMQ
     const payload = {
       ventaId,
       usuarioId: req.usuario.id,
-      items: items.map(i => ({
-        productoId: i.producto_id,
-        cantidad: i.cantidad
-      }))
+      items: items.map(i => ({ productoId: i.producto_id, cantidad: i.cantidad }))
     };
 
     await conn.query(
-      'INSERT INTO evento_venta (venta_id, tipo, payload) VALUES (?, ?, ?)',
+      'INSERT INTO evento_venta (venta_id, tipo, payload) VALUES ($1, $2, $3)',
       [ventaId, 'venta_registrada', JSON.stringify(payload)]
     );
 
-    await conn.commit();
+    await conn.query('COMMIT'); // Confirmar cambios
 
     // 4. Publicar a RabbitMQ
     const publicado = await publicarVenta(payload);
     if (publicado) {
       await pool.query(
-        "UPDATE evento_venta SET estado = 'publicado', publicado_en = NOW() WHERE venta_id = ? AND tipo = 'venta_registrada'",
+        "UPDATE evento_venta SET estado = 'publicado', publicado_en = NOW() WHERE venta_id = $1 AND tipo = 'venta_registrada'",
         [ventaId]
       );
     }
@@ -73,11 +71,12 @@ const registrar = async (req, res) => {
     });
 
   } catch (err) {
-    await conn.rollback();
+    await conn.query('ROLLBACK'); // Deshacer en caso de error
     console.error('[registrar venta]', err);
     res.status(500).json({ error: 'Error al registrar la venta' });
   } finally {
-    conn.release();
+    // IMPORTANTE: Liberar la conexión para que el pool no se llene
+    conn.release(); 
   }
 };
 
@@ -88,20 +87,20 @@ const listar = async (req, res) => {
   const limit = parseInt(req.query.limit || '20');
   const offset = (page - 1) * limit;
 
-  // ARREGLO: Quitamos el filtro por estado que causaba el Error 500
   let where = 'WHERE 1=1'; 
   const params = [];
+  let paramIdx = 1;
 
   if (fecha_inicio) {
-    where += ' AND DATE(v.fecha_hora) >= ?';
+    where += ` AND v.fecha_hora::date >= $${paramIdx++}`;
     params.push(fecha_inicio);
   }
   if (fecha_fin) {
-    where += ' AND DATE(v.fecha_hora) <= ?';
+    where += ` AND v.fecha_hora::date <= $${paramIdx++}`;
     params.push(fecha_fin);
   }
   if (producto) {
-    where += ' AND dv.nombre_producto LIKE ?';
+    where += ` AND dv.nombre_producto ILIKE $${paramIdx++}`;
     params.push(`%${producto}%`);
   }
 
@@ -113,18 +112,22 @@ const listar = async (req, res) => {
       LEFT JOIN detalle_venta dv ON v.id = dv.venta_id
       ${where}
       ORDER BY v.fecha_hora DESC
-      LIMIT ? OFFSET ?
+      LIMIT $${paramIdx++} OFFSET $${paramIdx++}
     `;
-    const [rows] = await pool.query(query, [...params, limit, offset]);
+    
+    // Postgres devuelve un objeto con la propiedad .rows
+    const result = await pool.query(query, [...params, limit, offset]);
 
-    const [total] = await pool.query(
-      `SELECT COUNT(DISTINCT v.id) AS total FROM venta v LEFT JOIN detalle_venta dv ON v.id = dv.venta_id ${where}`,
-      params
-    );
+    const totalQuery = `SELECT COUNT(DISTINCT v.id) AS total FROM venta v LEFT JOIN detalle_venta dv ON v.id = dv.venta_id ${where}`;
+    const totalResult = await pool.query(totalQuery, params);
 
     res.json({
-      datos: rows,
-      paginacion: { pagina: page, limite: limit, total: total[0] ? total[0].total : 0 }
+      datos: result.rows,
+      paginacion: { 
+        pagina: page, 
+        limite: limit, 
+        total: parseInt(totalResult.rows[0]?.total || 0) 
+      }
     });
 
   } catch (err) {
@@ -136,32 +139,32 @@ const listar = async (req, res) => {
 // ── GET /ventas/resumen ── Datos para Dashboard ───────────────
 const resumen = async (req, res) => {
   try {
-    // ARREGLO: Quitamos el "AND v.estado = 'confirmada'" de todas las queries del resumen
-    const [hoy] = await pool.query(`
+    // Queries para Postgres (quitando filtros de estado conflictivos)
+    const hoyRes = await pool.query(`
       SELECT COUNT(DISTINCT v.id) AS transacciones, COALESCE(SUM(v.monto_total),0) AS total
-      FROM venta v WHERE DATE(v.fecha_hora) = CURDATE()
+      FROM venta v WHERE v.fecha_hora::date = CURRENT_DATE
     `);
 
-    const [topProductos] = await pool.query(`
+    const topRes = await pool.query(`
       SELECT dv.nombre_producto, SUM(dv.cantidad) AS total_vendido
       FROM detalle_venta dv
       JOIN venta v ON v.id = dv.venta_id
-      WHERE DATE(v.fecha_hora) = CURDATE()
+      WHERE v.fecha_hora::date = CURRENT_DATE
       GROUP BY dv.nombre_producto
       ORDER BY total_vendido DESC
       LIMIT 5
     `);
 
-    const [semana] = await pool.query(`
+    const semanaRes = await pool.query(`
       SELECT COUNT(DISTINCT v.id) AS transacciones, COALESCE(SUM(v.monto_total),0) AS total
       FROM venta v
-      WHERE YEARWEEK(v.fecha_hora, 1) = YEARWEEK(CURDATE(), 1)
+      WHERE v.fecha_hora >= date_trunc('week', CURRENT_DATE)
     `);
 
     res.json({
-      hoy: hoy[0],
-      semana: semana[0],
-      topProductos
+      hoy: hoyRes.rows[0],
+      semana: semanaRes.rows[0],
+      topProductos: topRes.rows
     });
 
   } catch (err) {
