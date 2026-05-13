@@ -1,37 +1,40 @@
-const router = require('express').Router();
-const { verificarToken, soloAdmin } = require('../middleware/auth');
+const express = require('express');
+const router = express.Router();
+const { verificarToken } = require('../middleware/auth');
 const inv = require('../controllers/inventario.controller');
-const rec = require('../controllers/recetas.controller');
-const lot = require('../controllers/lotes.controller');
-const ale = require('../controllers/alertas.controller');
+const alertas = require('../controllers/alertas.controller');
+const lotes = require('../controllers/lotes.controller');
 const mov = require('../controllers/movimientos.controller');
+const recetas = require('../controllers/recetas.controller');
 
-router.use(verificarToken);
+// Inventario
+router.get('/inventario', inv.listar);
+router.post('/inventario/productos', verificarToken, inv.crearProducto);
+router.put('/inventario/productos/:id', verificarToken, inv.editarProducto);
+router.delete('/inventario/productos/:id', verificarToken, inv.eliminarProducto);
+router.post('/inventario/insumos', verificarToken, inv.crearInsumo);
+router.put('/inventario/insumos/:id', verificarToken, inv.editarInsumo);
+router.delete('/inventario/insumos/:id', verificarToken, inv.eliminarInsumo);
+router.patch('/inventario/stock-minimo/:id', verificarToken, inv.actualizarStockMinimo);
+router.patch('/inventario/estado/:id', verificarToken, inv.cambiarEstado);
 
-// ── Inventario ──────────────────────────────────────────────────
-router.get('/inventario',                                inv.listar);
-router.post('/inventario/productos',     soloAdmin,      inv.crearProducto);
-router.post('/inventario/insumos',       soloAdmin,      inv.crearInsumo);
-router.delete('/inventario/insumos/:id', soloAdmin,      inv.eliminarInsumo);
-router.patch('/inventario/:id/stock-minimo', soloAdmin,  inv.actualizarStockMinimo);
-router.patch('/inventario/:id/estado',   soloAdmin,      inv.cambiarEstado);
+// Alertas
+router.get('/alertas', verificarToken, alertas.listarActivas);
+router.get('/alertas/historial', verificarToken, alertas.historial);
+router.patch('/alertas/:id/resolver', verificarToken, alertas.resolver);
 
-// ── Recetas ─────────────────────────────────────────────────────
-router.get('/recetas',                        rec.listar);
-router.get('/recetas/:productoId',            rec.obtener);
-router.post('/recetas',          soloAdmin,   rec.crear);
-router.put('/recetas/:productoId', soloAdmin, rec.actualizar);
+// Lotes
+router.get('/lotes', verificarToken, lotes.listar);
+router.post('/lotes', verificarToken, lotes.registrar);
 
-// ── Lotes ───────────────────────────────────────────────────────
-router.get('/lotes',                     lot.listar);
-router.post('/lotes',                    lot.registrar);
+// Movimientos
+router.get('/movimientos', verificarToken, mov.listarHistorial);
+router.post('/movimientos', verificarToken, mov.registrarMovimiento);
 
-// ── Alertas ─────────────────────────────────────────────────────
-router.get('/alertas',                   ale.listarActivas);
-router.get('/alertas/historial',         ale.historial);
-
-// ── Movimientos ────────────────────────────────────────────────
-router.get('/movimientos', mov.listarHistorial);
-router.post('/movimientos', mov.registrarMovimiento);
+// Recetas
+router.get('/recetas', recetas.listar);
+router.get('/recetas/:productoId', recetas.obtener);
+router.post('/recetas', verificarToken, recetas.crear);
+router.put('/recetas/:productoId', verificarToken, recetas.actualizar);
 
 module.exports = router;

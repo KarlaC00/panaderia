@@ -48,7 +48,6 @@ const crear = async (req, res) => {
         return res.status(400).json({ error: 'Todos los campos son obligatorios' });
     }
 
-    // Validación de tipos y longitud
     if (typeof nombre !== 'string' || typeof correo !== 'string' || typeof contrasena !== 'string') {
         return res.status(400).json({ error: 'Formato de datos inválido' });
     }
@@ -92,7 +91,6 @@ const actualizar = async (req, res) => {
     const { id } = req.params;
     const { nombre, rol } = req.body;
 
-    // Validar que id sea un número entero
     if (!Number.isInteger(Number(id)) || Number(id) <= 0) {
         return res.status(400).json({ error: 'ID de usuario inválido' });
     }
@@ -136,13 +134,35 @@ const actualizar = async (req, res) => {
 // ── PATCH /usuarios/:id/desactivar ────────────────────────────
 const desactivar = async (req, res) => {
     const { id } = req.params;
+
+    // No puede desactivarse a sí mismo
+    if (Number(id) === req.usuario.id) {
+        return res.status(403).json({ error: 'No puedes desactivar tu propia cuenta' });
+    }
+
     try {
-        const existe = await pool.query('SELECT id, activo FROM usuario WHERE id = $1', [id]);
+        const existe = await pool.query(
+            'SELECT id, activo, rol FROM usuario WHERE id = $1',
+            [id]
+        );
         if (existe.rows.length === 0)
             return res.status(404).json({ error: 'Usuario no encontrado' });
 
         if (!existe.rows[0].activo)
             return res.status(409).json({ error: 'El usuario ya está inactivo' });
+
+        // Si es administrador, verificar que quede al menos uno activo
+        if (existe.rows[0].rol === 'administrador') {
+            const adminsActivos = await pool.query(
+                'SELECT COUNT(*) FROM usuario WHERE rol = $1 AND activo = true',
+                ['administrador']
+            );
+            if (parseInt(adminsActivos.rows[0].count) <= 1) {
+                return res.status(403).json({
+                    error: 'No se puede desactivar al único administrador activo del sistema'
+                });
+            }
+        }
 
         await pool.query('UPDATE usuario SET activo = false WHERE id = $1', [id]);
 
@@ -183,6 +203,12 @@ const activar = async (req, res) => {
 // ── DELETE /usuarios/:id/sesiones ─────────────────────────────
 const cerrarSesiones = async (req, res) => {
     const { id } = req.params;
+
+    // No puede cerrarse sus propias sesiones desde el panel de usuarios
+    if (Number(id) === req.usuario.id) {
+        return res.status(403).json({ error: 'No puedes cerrar tu propia sesión desde aquí. Usa el botón de cerrar sesión.' });
+    }
+
     try {
         const result = await pool.query(
             'UPDATE refresh_token SET invalidado = true WHERE usuario_id = $1 AND invalidado = false',

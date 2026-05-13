@@ -2,6 +2,7 @@ import { useState, useContext } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { loginService } from '../services/authService';
+import pan from '../assets/pan.svg';
 
 export default function Login() {
   const [correo, setCorreo] = useState('');
@@ -48,7 +49,11 @@ export default function Login() {
 
           {/* Header */}
           <div className="bg-[#EA580C] px-8 py-8 text-white text-center">
-            <div className="text-5xl mb-3">🥖</div>
+            <img
+                src={pan}
+                alt="Logo MAXIPAN"
+                className="w-20 h-20 mx-auto mb-3"
+              />
 
             <h1 className="text-2xl font-bold tracking-tight">
               MAXIPAN
