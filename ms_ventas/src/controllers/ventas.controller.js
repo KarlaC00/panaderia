@@ -7,7 +7,6 @@ const { publicarVenta } = require('../events/publisher');
 // Regla de negocio: RN-01 (stock nunca negativo – validado en ms_inventario vía evento)
 const registrar = async (req, res) => {
   const { items } = req.body;
-  // items: [{ producto_id, nombre_producto, cantidad, precio_unitario }]
 
   // REQ-V04 / Escenario 2: Campos obligatorios vacíos
   if (!items || !Array.isArray(items) || items.length === 0) {
@@ -37,12 +36,9 @@ const registrar = async (req, res) => {
       0
     );
 
-    // REQ-V02: La fecha/hora se registra automáticamente con DEFAULT NOW() en la tabla
     // 1. Crear la venta
-    const ventaResult = await client.query(
-      `INSERT INTO venta (usuario_id, monto_total)
-       VALUES ($1, $2)
-       RETURNING id`,
+    const [ventaResult] = await conn.query(
+      'INSERT INTO venta (usuario_id, monto_total) VALUES (?, ?)',
       [req.usuario.id, montoTotal]
     );
     const ventaId = ventaResult.rows[0].id;
@@ -65,8 +61,7 @@ const registrar = async (req, res) => {
       );
     }
 
-    // 3. Patrón Outbox: garantizar entrega del evento aunque RabbitMQ esté caído
-    //    Cubre REQ-E01, REQ-E03
+    // 3. Crear registro en outbox (patrón Outbox para garantizar entrega)
     const payload = {
       ventaId,
       usuarioId: req.usuario.id,
@@ -84,7 +79,7 @@ const registrar = async (req, res) => {
 
     await client.query('COMMIT');
 
-    // 4. Publicar a RabbitMQ (best-effort; el outbox sirve de respaldo – REQ-E01, REQ-E03)
+    // 4. Publicar a RabbitMQ (best effort - el outbox como respaldo)
     const publicado = await publicarVenta(payload);
     if (publicado) {
       await pool.query(
@@ -119,15 +114,7 @@ const listar = async (req, res) => {
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '20', 10)));
   const offset = (page - 1) * limit;
 
-  // REQ-V10 / Escenario 4 (MX-V02): Rango de fechas inválido
-  if (fecha_inicio && fecha_fin && fecha_fin < fecha_inicio) {
-    return res.status(400).json({
-      error: 'La fecha de inicio no puede ser mayor que la fecha de fin',
-    });
-  }
-
-  // Construcción dinámica de filtros con $N (PostgreSQL)
-  const condiciones = [`v.estado = 'confirmada'`];
+  let where = 'WHERE v.estado = "confirmada"';
   const params = [];
 
   if (fecha_inicio) {
@@ -135,53 +122,37 @@ const listar = async (req, res) => {
     condiciones.push(`DATE(v.fecha_hora) >= $${params.length}`);
   }
   if (fecha_fin) {
+    if (fecha_inicio && fecha_fin < fecha_inicio) {
+      return res.status(400).json({ error: 'La fecha de inicio no puede ser mayor que la fecha de fin' });
+    }
+    where += ' AND DATE(v.fecha_hora) <= ?';
     params.push(fecha_fin);
     condiciones.push(`DATE(v.fecha_hora) <= $${params.length}`);
   }
   if (producto) {
     params.push(`%${producto}%`);
-    condiciones.push(`dv.nombre_producto ILIKE $${params.length}`);
   }
 
-  const where = condiciones.join(' AND ');
-
   try {
-    // REQ-V09: cada fila incluye producto, cantidad, fecha/hora y monto
-    const dataQuery = `
-      SELECT
-        v.id,
-        v.fecha_hora,
-        v.monto_total,
-        dv.producto_id,
-        dv.nombre_producto,
-        dv.cantidad,
-        dv.precio_unitario,
-        dv.subtotal
+    const query = `
+      SELECT v.id, v.fecha_hora, v.monto_total,
+             dv.producto_id, dv.nombre_producto, dv.cantidad, dv.precio_unitario, dv.subtotal
       FROM venta v
       JOIN detalle_venta dv ON v.id = dv.venta_id
-      WHERE ${where}
+      ${where}
       ORDER BY v.fecha_hora DESC
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;
     const { rows } = await pool.query(dataQuery, [...params, limit, offset]);
 
-    // Total para paginación
-    const countQuery = `
-      SELECT COUNT(DISTINCT v.id) AS total
-      FROM venta v
-      JOIN detalle_venta dv ON v.id = dv.venta_id
-      WHERE ${where}
-    `;
-    const { rows: countRows } = await pool.query(countQuery, params);
+    const [total] = await pool.query(
+      `SELECT COUNT(DISTINCT v.id) AS total FROM venta v JOIN detalle_venta dv ON v.id = dv.venta_id ${where}`,
+      params
+    );
 
-    // REQ-V10 / Escenario 2: Retorna lista vacía, no error
     res.json({
       datos: rows,
-      paginacion: {
-        pagina: page,
-        limite: limit,
-        total: parseInt(countRows[0].total, 10),
-      },
+      paginacion: { pagina: page, limite: limit, total: total[0].total }
     });
   } catch (err) {
     console.error('[listar ventas]', err);
@@ -194,14 +165,9 @@ const listar = async (req, res) => {
 // Historia: MX-D01-2026 / MX-D01A-2026 (escenario 2)
 const resumen = async (req, res) => {
   try {
-    // Ventas del día
-    const { rows: hoy } = await pool.query(`
-      SELECT
-        COUNT(DISTINCT v.id)          AS transacciones,
-        COALESCE(SUM(v.monto_total), 0) AS total
-      FROM venta v
-      WHERE DATE(v.fecha_hora) = CURRENT_DATE
-        AND v.estado = 'confirmada'
+    const [hoy] = await pool.query(`
+      SELECT COUNT(DISTINCT v.id) AS transacciones, COALESCE(SUM(v.monto_total),0) AS total
+      FROM venta v WHERE DATE(v.fecha_hora) = CURDATE() AND v.estado = 'confirmada'
     `);
 
     // Top 5 productos del día (REQ-D02: productos más vendidos)
@@ -211,8 +177,7 @@ const resumen = async (req, res) => {
         SUM(dv.cantidad) AS total_vendido
       FROM detalle_venta dv
       JOIN venta v ON v.id = dv.venta_id
-      WHERE DATE(v.fecha_hora) = CURRENT_DATE
-        AND v.estado = 'confirmada'
+      WHERE DATE(v.fecha_hora) = CURDATE() AND v.estado = 'confirmada'
       GROUP BY dv.nombre_producto
       ORDER BY total_vendido DESC
       LIMIT 5
@@ -224,8 +189,7 @@ const resumen = async (req, res) => {
         COUNT(DISTINCT v.id)            AS transacciones,
         COALESCE(SUM(v.monto_total), 0) AS total
       FROM venta v
-      WHERE DATE_TRUNC('week', v.fecha_hora) = DATE_TRUNC('week', CURRENT_DATE)
-        AND v.estado = 'confirmada'
+      WHERE YEARWEEK(v.fecha_hora, 1) = YEARWEEK(CURDATE(), 1) AND v.estado = 'confirmada'
     `);
 
     res.json({
