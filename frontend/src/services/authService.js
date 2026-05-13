@@ -50,3 +50,27 @@ export async function refreshService() {
   if (!res.ok) throw new Error(data.error || 'Sesión expirada');
   return data; // { accessToken }
 }
+
+// ── PATCH /auth/perfil ─────────────────────────────────────────
+export async function updateProfileService(datosPerfil) {
+  const res = await httpClient(`${API_URLS.auth}/auth/perfil`, {
+    method: 'PATCH',
+    body: JSON.stringify(datosPerfil),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al actualizar perfil');
+  return data;
+}
+
+// ── POST /auth/cambiar-contrasena ──────────────────────────────
+export async function changePasswordService(contrasenaActual, contrasenaNueva) {
+  const res = await httpClient(`${API_URLS.auth}/auth/cambiar-contrasena`, {
+    method: 'POST',
+    body: JSON.stringify({ contrasenaActual, contrasenaNueva }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al cambiar contraseña');
+  return data;
+}

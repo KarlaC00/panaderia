@@ -1,14 +1,6 @@
 // ─────────────────────────────────────────────────────────────
-//  Dashboard.jsx  –  Panel de Monitoreo Maxipan
+//  Dashboard.jsx  –  Panel de Monitoreo Maxipan (Versión Orange SVG)
 //  UBICACIÓN: frontend/src/pages/Dashboard.jsx
-//
-//  Requerimientos cubiertos:
-//    REQ-D01  Stock actual en tiempo real (polling 30s)
-//    REQ-D02  Resumen de ventas del día (transacciones, top productos, valor total)
-//    REQ-D03  Resumen de ventas de la semana en curso
-//    REQ-D04  Alertas activas: stock bajo + lotes próximos a vencer
-//    REQ-D05  Actualización sin recarga (polling automático)
-//    REQ-D06  Diseño responsivo
 // ─────────────────────────────────────────────────────────────
 
 import { useEffect, useState, useCallback, useContext } from 'react';
@@ -20,24 +12,35 @@ import {
 } from '../services/inventoryService';
 import {
   getResumenVentasService,
-  getHistorialVentasService,
 } from '../services/salesService';
 
-// ── Constantes ────────────────────────────────────────────────
-const POLL_INTERVAL = 30_000; // 30 segundos
+// ── Iconos SVG (Color Naranja Maxipan) ────────────────────────
+const IconMoney = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
+);
+const IconCart = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+);
+const IconChart = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+);
+const IconPackage = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16.5 9.4 7.5 4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>
+);
+const IconAlert = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+);
+const IconClock = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+);
+const IconCheck = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+);
 
 // ── Utilidades ────────────────────────────────────────────────
-const fmt = (n) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n ?? 0);
-
-const fmtNum = (n) =>
-  new Intl.NumberFormat('es-CO').format(n ?? 0);
-
-const today = () => {
-  const d = new Date();
-  return d.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-};
-
+const POLL_INTERVAL = 10_000;
+const fmt = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n ?? 0);
+const fmtNum = (n) => new Intl.NumberFormat('es-CO').format(n ?? 0);
 const diasHastaVencer = (fechaVencimiento) => {
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
@@ -46,14 +49,11 @@ const diasHastaVencer = (fechaVencimiento) => {
   return Math.round((vence - hoy) / (1000 * 60 * 60 * 24));
 };
 
-// ── Componente de estado de carga / error ─────────────────────
+// ── Sub-componentes Visuales ──────────────────────────────────
 function Skeleton({ h = 'h-6', w = 'w-full' }) {
-  return (
-    <div className={`${h} ${w} bg-orange-100 rounded-lg animate-pulse`} />
-  );
+  return <div className={`${h} ${w} bg-orange-100 rounded-lg animate-pulse`} />;
 }
 
-// ── Tarjeta KPI ───────────────────────────────────────────────
 function KpiCard({ icon, label, value, sub, color = 'orange', loading }) {
   const colors = {
     orange: { bg: 'bg-orange-50', border: 'border-orange-200', icon: 'text-orange-500', value: 'text-orange-700' },
@@ -62,83 +62,54 @@ function KpiCard({ icon, label, value, sub, color = 'orange', loading }) {
     red:    { bg: 'bg-red-50', border: 'border-red-200', icon: 'text-red-500', value: 'text-red-700' },
   };
   const c = colors[color];
-
   return (
     <div className={`rounded-2xl border ${c.border} ${c.bg} p-5 flex flex-col gap-3 shadow-sm hover:shadow-md transition-shadow`}>
       <div className="flex items-center justify-between">
-        <span className={`text-2xl ${c.icon}`}>{icon}</span>
-        {sub && <span className="text-xs text-gray-400 font-medium">{sub}</span>}
+        <span>{icon}</span>
+        {sub && <span className="text-xs text-gray-400 font-medium tracking-tight">{sub}</span>}
       </div>
-      {loading ? (
-        <Skeleton h="h-8" w="w-3/4" />
-      ) : (
-        <p className={`text-2xl font-bold ${c.value} leading-none`}>{value}</p>
-      )}
-      <p className="text-sm text-gray-500 font-medium">{label}</p>
+      {loading ? <Skeleton h="h-8" w="w-3/4" /> : <p className={`text-2xl font-bold ${c.value} leading-none`}>{value}</p>}
+      <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">{label}</p>
     </div>
   );
 }
 
-// ── Badge de estado de stock ──────────────────────────────────
-function StockBadge({ stock, minimo }) {
-  if (stock <= 0)
-    return <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">Sin stock</span>;
-  if (stock <= minimo)
-    return <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Bajo mínimo</span>;
-  return <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Normal</span>;
-}
-
-// ── Barra de progreso de stock ────────────────────────────────
-function StockBar({ stock, minimo, maximo = null }) {
-  const cap = maximo || Math.max(stock, minimo) * 2 || 1;
-  const pct = Math.min(100, (stock / cap) * 100);
-  const isLow = stock <= minimo;
-  const isEmpty = stock <= 0;
-  const color = isEmpty ? 'bg-red-400' : isLow ? 'bg-amber-400' : 'bg-emerald-400';
-
+function AlertaItem({ _tipo, nombre, detalle, critica }) {
   return (
-    <div className="w-full bg-gray-100 rounded-full h-2">
-      <div
-        className={`h-2 rounded-full transition-all duration-500 ${color}`}
-        style={{ width: `${pct}%` }}
-      />
-    </div>
-  );
-}
-
-// ── Chip de alerta ────────────────────────────────────────────
-function AlertaItem({ tipo, nombre, detalle, critica }) {
-  return (
-    <div
-      className={`flex items-start gap-3 p-3 rounded-xl border ${
-        critica
-          ? 'bg-red-50 border-red-200'
-          : 'bg-amber-50 border-amber-200'
-      }`}
-    >
-      <span className="text-xl flex-shrink-0">{tipo === 'stock' ? '📦' : '⏰'}</span>
+    <div className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${critica ? 'bg-red-50 border-red-200 shadow-sm' : 'bg-amber-50 border-amber-200'}`}>
+      <span className={`flex-shrink-0 mt-0.5 ${critica ? 'text-red-500' : 'text-orange-500'}`}>
+        {_tipo === 'stock' ? <IconAlert /> : <IconClock />}
+      </span>
       <div className="min-w-0">
-        <p className={`text-sm font-semibold ${critica ? 'text-red-800' : 'text-amber-800'} truncate`}>
-          {nombre}
-        </p>
-        <p className={`text-xs ${critica ? 'text-red-600' : 'text-amber-600'}`}>{detalle}</p>
+        <p className={`text-sm font-bold ${critica ? 'text-red-800' : 'text-orange-900'} truncate`}>{nombre}</p>
+        <p className={`text-xs ${critica ? 'text-red-600' : 'text-orange-700'}`}>{detalle}</p>
       </div>
-      {critica && (
-        <span className="ml-auto flex-shrink-0 text-xs font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full">
-          Crítico
-        </span>
-      )}
+      {critica && <span className="ml-auto text-[9px] font-black text-red-600 bg-red-100 px-2 py-0.5 rounded-full uppercase">Crítico</span>}
     </div>
   );
 }
 
-// ── Componente principal ──────────────────────────────────────
+function StockBadge({ stock, minimo }) {
+  if (stock <= 0) return <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-red-100 text-red-700 uppercase">Agotado</span>;
+  if (stock <= minimo) return <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-orange-100 text-orange-700 uppercase">Reordenar</span>;
+  return <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-700 uppercase">Óptimo</span>;
+}
+
+function StockBar({ stock, minimo }) {
+  const cap = Math.max(stock, minimo) * 1.5 || 1;
+  const pct = Math.min(100, (stock / cap) * 100);
+  const color = stock <= 0 ? 'bg-red-500' : stock <= minimo ? 'bg-orange-500' : 'bg-emerald-500';
+  return (
+    <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+      <div className={`h-full transition-all duration-700 ease-out ${color}`} style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
+// ── Componente Principal ──────────────────────────────────────
 export default function Dashboard() {
   const { user } = useContext(AuthContext);
-
-  // Estado
   const [resumen, setResumen]       = useState(null);
-  const [historial, setHistorial]   = useState([]);
   const [inventario, setInventario] = useState([]);
   const [alertas, setAlertas]       = useState([]);
   const [lotes, setLotes]           = useState([]);
@@ -146,401 +117,149 @@ export default function Dashboard() {
   const [error, setError]           = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
 
-  // ── Fetch de datos ──────────────────────────────────────────
   const fetchAll = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
-    setError(null);
     try {
-      const [resData, histData, invData, alertData, lotesData] = await Promise.allSettled([
+      const [resVentas, resInv, resAlertas, resLotes] = await Promise.allSettled([
         getResumenVentasService(),
-        getHistorialVentasService(),
         getInventoryService(),
         getAlertasService(),
         getLotesService(),
       ]);
 
-      if (resData.status   === 'fulfilled') setResumen(resData.value);
-      if (histData.status  === 'fulfilled') setHistorial(Array.isArray(histData.value) ? histData.value : histData.value?.ventas ?? []);
-      if (invData.status   === 'fulfilled') setInventario(Array.isArray(invData.value) ? invData.value : invData.value?.items ?? []);
-      if (alertData.status === 'fulfilled') setAlertas(Array.isArray(alertData.value) ? alertData.value : alertData.value?.alertas ?? []);
-      if (lotesData.status === 'fulfilled') setLotes(Array.isArray(lotesData.value) ? lotesData.value : lotesData.value?.lotes ?? []);
+      if (resVentas.status === 'fulfilled') setResumen(resVentas.value);
+      if (resInv.status === 'fulfilled') {
+        const prods = resInv.value?.productos ?? [];
+        const insu = resInv.value?.insumos ?? [];
+        const combined = [
+          ...prods.map(p => ({ id: `p-${p.id}`, nombre: p.nombre, stock_actual: Number(p.stock_estimado ?? 0), stock_minimo: Number(p.stock_minimo ?? 0), unidad: p.unidad_medida, tipo: 'producto' })),
+          ...insu.map(i => ({ id: `i-${i.id}`, nombre: i.nombre, stock_actual: Number(i.stock_actual ?? 0), stock_minimo: Number(i.stock_minimo ?? 0), unidad: i.unidad_medida, tipo: 'insumo' }))
+        ];
+        setInventario(combined);
+      }
+      if (resAlertas.status === 'fulfilled') setAlertas(Array.isArray(resAlertas.value) ? resAlertas.value : []);
+      if (resLotes.status === 'fulfilled') setLotes(Array.isArray(resLotes.value) ? resLotes.value : []);
 
       setLastUpdate(new Date());
+      setError(null);
     } catch (e) {
-      setError('No se pudo conectar con los servicios. Reintentando…');
+      setError('Sincronización interrumpida.');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Carga inicial
   useEffect(() => { fetchAll(); }, [fetchAll]);
-
-  // Polling — REQ-D05
   useEffect(() => {
     const id = setInterval(() => fetchAll(true), POLL_INTERVAL);
     return () => clearInterval(id);
   }, [fetchAll]);
 
-  // ── Derivados ───────────────────────────────────────────────
+  const kpis = {
+    hoyTotal: Number(resumen?.hoy?.total ?? 0),
+    hoyTrans: Number(resumen?.hoy?.transacciones ?? 0),
+    semTotal: Number(resumen?.semana?.total ?? 0),
+    semTrans: Number(resumen?.semana?.transacciones ?? 0),
+  };
 
-  // Ventas del día
-  const hoy = new Date().toDateString();
-  const ventasHoy = historial.filter(v => new Date(v.fecha || v.created_at).toDateString() === hoy);
-  const totalHoy = ventasHoy.reduce((s, v) => s + Number(v.total ?? v.monto ?? 0), 0);
+  const topProductos = (resumen?.topProductos ?? []).slice(0, 5);
 
-  // Ventas de la semana — REQ-D03
-  const inicioSemana = new Date();
-  inicioSemana.setDate(inicioSemana.getDate() - inicioSemana.getDay());
-  inicioSemana.setHours(0, 0, 0, 0);
-  const ventasSemana = historial.filter(v => new Date(v.fecha || v.created_at) >= inicioSemana);
-  const totalSemana  = ventasSemana.reduce((s, v) => s + Number(v.total ?? v.monto ?? 0), 0);
-
-  // Top productos — REQ-D02
-  const conteoProductos = {};
-  ventasHoy.forEach(v => {
-    const items = v.items ?? v.detalles ?? [];
-    items.forEach(i => {
-      const nombre = i.nombre_producto ?? i.nombre ?? i.producto ?? 'Desconocido';
-      const cant   = Number(i.cantidad ?? 1);
-      conteoProductos[nombre] = (conteoProductos[nombre] ?? 0) + cant;
-    });
-  });
-  const topProductos = Object.entries(conteoProductos)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
-
-  // Inventario bajo mínimo — REQ-D01 / D04
-  const invCritico  = inventario.filter(i => Number(i.stock_actual ?? i.stock ?? 0) <= 0);
-  const invBajo     = inventario.filter(i => {
-    const s = Number(i.stock_actual ?? i.stock ?? 0);
-    const m = Number(i.stock_minimo ?? i.minimo ?? 0);
-    return s > 0 && s <= m;
-  });
-
-  // Lotes próximos a vencer (≤5 días) — REQ-I12 / D04
-  const lotesAlerta = lotes.filter(l => {
-    const dias = diasHastaVencer(l.fecha_vencimiento ?? l.vencimiento);
-    return dias <= 5 && dias >= 0;
-  });
-
-  // Alertas combinadas — REQ-D04
   const alertasCombinadas = [
-    ...alertas,
-    ...invCritico.map(i => ({
-      _tipo: 'stock',
-      nombre: i.nombre,
-      detalle: 'Sin stock disponible',
-      critica: true,
-    })),
-    ...invBajo.map(i => ({
-      _tipo: 'stock',
-      nombre: i.nombre,
-      detalle: `Stock ${i.stock_actual ?? i.stock} / mínimo ${i.stock_minimo ?? i.minimo} ${i.unidad ?? ''}`,
-      critica: false,
-    })),
-    ...lotesAlerta.map(l => {
-      const dias = diasHastaVencer(l.fecha_vencimiento ?? l.vencimiento);
-      return {
-        _tipo: 'vencimiento',
-        nombre: l.nombre_insumo ?? l.insumo ?? l.nombre ?? `Lote ${l.numero_lote ?? l.id}`,
-        detalle: dias === 0 ? 'Vence HOY' : `Vence en ${dias} día${dias !== 1 ? 's' : ''}`,
-        critica: dias <= 1,
-      };
-    }),
+    ...alertas.map(a => ({ _tipo: 'stock', nombre: a.producto || a.insumo || 'Stock bajo', detalle: `Nivel actual: ${a.stock_al_momento}`, critica: a.stock_al_momento <= 0 })),
+    ...lotes.filter(l => {
+      const d = diasHastaVencer(l.fecha_vencimiento);
+      return d >= 0 && d <= 5;
+    }).map(l => ({ _tipo: 'vencimiento', nombre: l.nombre_insumo || `Lote ${l.numero_lote}`, detalle: `Expira en ${diasHastaVencer(l.fecha_vencimiento)} días`, critica: diasHastaVencer(l.fecha_vencimiento) <= 1 }))
   ];
 
-  // ── Render ──────────────────────────────────────────────────
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--cream, #FFFBF5)', fontFamily: 'var(--font-sans, system-ui)' }}>
+    <div className="min-h-screen p-4 sm:p-8 space-y-8" style={{ backgroundColor: '#FFFCF8' }}>
+      
+      {error && <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-xl text-sm font-bold uppercase tracking-tight">{error}</div>}
 
-      {/* ── Header ── */}
-     
+      {/* KPIs Principales */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <KpiCard icon={<IconMoney />} label="Ventas Hoy" value={fmt(kpis.hoyTotal)} color="orange" loading={loading} />
+        <KpiCard icon={<IconCart />} label="Pedidos Hoy" value={fmtNum(kpis.hoyTrans)} color="green" loading={loading} />
+        <KpiCard icon={<IconChart />} label="Semana Actual" value={fmt(kpis.semTotal)} color="amber" loading={loading} />
+        <KpiCard icon={<IconPackage />} label="Pedidos Semana" value={fmtNum(kpis.semTrans)} color="green" loading={loading} />
+      </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-
-        {/* ── Error banner ── */}
-        {error && (
-          <div className="flex items-center gap-3 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700">
-            <span className="text-xl"></span>
-            <p className="text-sm font-medium">{error}</p>
-            <button onClick={() => fetchAll()} className="ml-auto text-xs underline">Reintentar</button>
-          </div>
-        )}
-
-        {/* ── KPIs REQ-D02 / D03 ── */}
-        <section>
-          <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Ventas</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <KpiCard
-              icon=""
-              label="Ingresos hoy"
-              value={fmt(totalHoy)}
-              sub="Hoy"
-              color="orange"
-              loading={loading}
-            />
-            <KpiCard
-              icon=""
-              label="Transacciones hoy"
-              value={fmtNum(resumen?.total_transacciones_hoy ?? ventasHoy.length)}
-              sub="Hoy"
-              color="green"
-              loading={loading}
-            />
-            <KpiCard
-              icon=""
-              label="Ingresos semana"
-              value={fmt(resumen?.total_semana ?? totalSemana)}
-              sub="Esta semana"
-              color="amber"
-              loading={loading}
-            />
-            <KpiCard
-              icon=""
-              label="Pedidos semana"
-              value={fmtNum(resumen?.transacciones_semana ?? ventasSemana.length)}
-              sub="Esta semana"
-              color={alertasCombinadas.length > 0 ? 'red' : 'green'}
-              loading={loading}
-            />
-          </div>
-        </section>
-
-        {/* ── Fila intermedia: Alertas + Top Productos ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-          {/* Alertas activas — REQ-D04 */}
-          <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h2 className="font-bold text-gray-800 flex items-center gap-2">
-                <span></span> Alertas Activas
-              </h2>
-              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                alertasCombinadas.length === 0
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-red-100 text-red-700'
-              }`}>
-                {alertasCombinadas.length === 0 ? 'Todo en orden' : `${alertasCombinadas.length} activas`}
-              </span>
-            </div>
-            <div className="p-4 space-y-2 max-h-72 overflow-y-auto">
-              {loading ? (
-                Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} h="h-14" />)
-              ) : alertasCombinadas.length === 0 ? (
-                <div className="flex flex-col items-center py-8 text-gray-400">
-                  <span className="text-4xl mb-2"></span>
-                  <p className="text-sm font-medium">Sin alertas activas</p>
-                  <p className="text-xs">Todo el inventario en niveles normales</p>
-                </div>
-              ) : (
-                alertasCombinadas.map((a, i) => (
-                  <AlertaItem
-                    key={i}
-                    tipo={a._tipo ?? a.tipo ?? 'stock'}
-                    nombre={a.nombre ?? a.producto ?? 'Elemento'}
-                    detalle={a.detalle ?? a.mensaje ?? ''}
-                    critica={a.critica ?? false}
-                  />
-                ))
-              )}
-            </div>
-          </section>
-
-          {/* Top productos del día — REQ-D02 */}
-          <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h2 className="font-bold text-gray-800 flex items-center gap-2">
-                <span></span> Más Vendidos Hoy
-              </h2>
-              <span className="text-xs text-gray-400">Top 5</span>
-            </div>
-            <div className="p-4 space-y-3 max-h-72 overflow-y-auto">
-              {loading ? (
-                Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} h="h-10" />)
-              ) : topProductos.length === 0 ? (
-                <div className="flex flex-col items-center py-8 text-gray-400">
-                  <span className="text-4xl mb-2"></span>
-                  <p className="text-sm font-medium">Sin ventas registradas hoy</p>
-                </div>
-              ) : (
-                topProductos.map(([nombre, cantidad], idx) => {
-                  const max = topProductos[0][1];
-                  return (
-                    <div key={nombre} className="flex items-center gap-3">
-                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
-                        idx === 0 ? 'bg-orange-500 text-white' :
-                        idx === 1 ? 'bg-orange-200 text-orange-800' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>
-                        {idx + 1}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm font-medium text-gray-800 truncate">{nombre}</span>
-                          <span className="text-xs font-bold text-orange-600 ml-2 flex-shrink-0">{fmtNum(cantidad)} uds</span>
-                        </div>
-                        <div className="w-full bg-gray-100 rounded-full h-1.5">
-                          <div
-                            className="h-1.5 rounded-full bg-orange-400 transition-all duration-700"
-                            style={{ width: `${(cantidad / max) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </section>
-        </div>
-
-        {/* ── Estado del Inventario — REQ-D01 ── */}
-        <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-            <h2 className="font-bold text-gray-800 flex items-center gap-2">
-              <span></span> Estado del Inventario
-            </h2>
-            <div className="flex gap-2 text-xs">
-              <span className="px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 font-medium">
-                {inventario.filter(i => Number(i.stock_actual ?? i.stock ?? 0) > Number(i.stock_minimo ?? i.minimo ?? 0)).length} normales
-              </span>
-              {invBajo.length > 0 && (
-                <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-700 font-medium">
-                  {invBajo.length} bajos
-                </span>
-              )}
-              {invCritico.length > 0 && (
-                <span className="px-2 py-1 rounded-full bg-red-100 text-red-700 font-medium">
-                  {invCritico.length} sin stock
-                </span>
-              )}
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} h="h-20" />)}
-            </div>
-          ) : inventario.length === 0 ? (
-            <div className="flex flex-col items-center py-12 text-gray-400">
-              <span className="text-4xl mb-2"></span>
-              <p className="text-sm font-medium">Sin registros de inventario</p>
-            </div>
-          ) : (
-            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
-              {[...inventario]
-                .sort((a, b) => {
-                  const sa = Number(a.stock_actual ?? a.stock ?? 0);
-                  const ma = Number(a.stock_minimo ?? a.minimo ?? 1);
-                  const sb = Number(b.stock_actual ?? b.stock ?? 0);
-                  const mb = Number(b.stock_minimo ?? b.minimo ?? 1);
-                  // Primero los críticos, luego bajos, luego normales
-                  const pa = sa <= 0 ? 0 : sa <= ma ? 1 : 2;
-                  const pb = sb <= 0 ? 0 : sb <= mb ? 1 : 2;
-                  return pa - pb;
-                })
-                .map(item => {
-                  const stock  = Number(item.stock_actual ?? item.stock ?? 0);
-                  const minimo = Number(item.stock_minimo ?? item.minimo ?? 0);
-                  const tipo   = item.tipo ?? (item.es_insumo ? 'insumo' : 'producto');
-                  return (
-                    <div
-                      key={item.id}
-                      className={`p-3 rounded-xl border transition-all hover:shadow-sm ${
-                        stock <= 0
-                          ? 'bg-red-50 border-red-200'
-                          : stock <= minimo
-                          ? 'bg-amber-50 border-amber-200'
-                          : 'bg-gray-50 border-gray-200'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-gray-800 truncate">{item.nombre}</p>
-                          <p className="text-xs text-gray-400 capitalize">{tipo}</p>
-                        </div>
-                        <StockBadge stock={stock} minimo={minimo} />
-                      </div>
-                      <StockBar stock={stock} minimo={minimo} />
-                      <div className="flex justify-between mt-1.5 text-xs text-gray-500">
-                        <span>
-                          <span className="font-bold text-gray-800">{fmtNum(stock)}</span>{' '}
-                          {item.unidad_medida ?? item.unidad ?? 'uds'}
-                        </span>
-                        <span>mín. {fmtNum(minimo)}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          )}
-        </section>
-
-        {/* ── Lotes próximos a vencer — REQ-D04 ── */}
-        {(loading || lotesAlerta.length > 0) && (
-          <section className="bg-white rounded-2xl border border-amber-200 shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-amber-100 bg-amber-50">
-              <h2 className="font-bold text-amber-800 flex items-center gap-2">
-                <span>⏰</span> Lotes Próximos a Vencer
-              </h2>
-              <span className="text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                ≤ 5 días
-              </span>
-            </div>
-            <div className="p-4">
-              {loading ? (
-                <div className="space-y-2">
-                  {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} h="h-14" />)}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {lotesAlerta.map((l, i) => {
-                    const dias = diasHastaVencer(l.fecha_vencimiento ?? l.vencimiento);
-                    return (
-                      <div
-                        key={l.id ?? i}
-                        className={`p-3 rounded-xl border ${
-                          dias <= 1
-                            ? 'bg-red-50 border-red-200'
-                            : 'bg-amber-50 border-amber-200'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-base">{dias <= 1 ? '🚨' : '⚠️'}</span>
-                          <p className="text-sm font-semibold text-gray-800 truncate">
-                            {l.nombre_insumo ?? l.insumo ?? l.nombre ?? `Lote ${l.numero_lote ?? l.id}`}
-                          </p>
-                        </div>
-                        <p className="text-xs text-gray-500 mb-1">
-                          Lote: <span className="font-medium">{l.numero_lote ?? l.id}</span>
-                          {l.cantidad && (
-                            <> · <span className="font-medium">{fmtNum(l.cantidad)} {l.unidad ?? 'uds'}</span></>
-                          )}
-                        </p>
-                        <p className={`text-xs font-bold ${dias <= 1 ? 'text-red-600' : 'text-amber-600'}`}>
-                          {dias === 0 ? '⚡ Vence HOY' : `Vence en ${dias} día${dias !== 1 ? 's' : ''}`}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {/* ── Footer de actualización ── */}
-        <div className="text-center pb-4">
-          <p className="text-xs text-gray-400">
-            Actualización automática cada {POLL_INTERVAL / 1000}s · Sistema Maxipan v1.0
-            {lastUpdate && (
-              <> · Última actualización: {lastUpdate.toLocaleTimeString('es-CO')}</>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Panel de Alertas */}
+        <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
+          <h2 className="font-black text-gray-800 mb-5 flex justify-between items-center uppercase tracking-widest text-sm">
+            Notificaciones Críticas
+            <span className="bg-orange-500 text-white text-[10px] px-2.5 py-1 rounded-full">{alertasCombinadas.length}</span>
+          </h2>
+          <div className="space-y-4 max-h-72 overflow-y-auto pr-2 custom-scrollbar">
+            {alertasCombinadas.length > 0 ? (
+              alertasCombinadas.map((a, i) => <AlertaItem key={i} {...a} />)
+            ) : (
+              <div className="text-center py-12 flex flex-col items-center">
+                <IconCheck />
+                <p className="text-gray-400 text-xs font-bold mt-4 uppercase tracking-widest">Sistemas en orden</p>
+              </div>
             )}
-          </p>
+          </div>
         </div>
 
+        {/* Top Ventas */}
+        <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
+          <h2 className="font-black text-gray-800 mb-5 uppercase tracking-widest text-sm">Rendimiento de Productos</h2>
+          <div className="space-y-5">
+            {topProductos.map((p, i) => (
+              <div key={i} className="group">
+                <div className="flex justify-between text-xs mb-2">
+                  <span className="font-black text-gray-400 mr-2">{i+1}</span>
+                  <span className="font-bold text-gray-700 flex-1 truncate">{p.nombre_producto}</span>
+                  <span className="text-orange-600 font-black ml-4">{p.total_vendido} <small className="text-[10px]">UND</small></span>
+                </div>
+                <div className="w-full bg-gray-50 h-2 rounded-full overflow-hidden">
+                  <div className="bg-orange-500 h-full group-hover:bg-orange-400 transition-all duration-1000" style={{ width: `${(p.total_vendido / (topProductos[0]?.total_vendido || 1)) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
+
+      {/* Monitor de Inventario */}
+      <section className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+          <h2 className="font-black text-gray-800 uppercase tracking-widest text-sm">Estado de Stock e Insumos</h2>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">
+              LIVE: {lastUpdate?.toLocaleTimeString()}
+            </span>
+          </div>
+        </div>
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-h-[500px] overflow-y-auto custom-scrollbar">
+          {inventario.map(item => (
+            <div key={item.id} className={`p-5 rounded-2xl border transition-all hover:border-orange-200 ${item.stock_actual <= item.stock_minimo ? 'bg-orange-50/30 border-orange-100' : 'bg-white border-gray-100'}`}>
+              <div className="flex justify-between items-start mb-4">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-sm text-gray-800 truncate leading-tight">{item.nombre}</h3>
+                  <span className="text-[9px] font-black text-orange-400 uppercase tracking-widest">{item.tipo}</span>
+                </div>
+                <StockBadge stock={item.stock_actual} minimo={item.stock_minimo} />
+              </div>
+              <StockBar stock={item.stock_actual} minimo={item.stock_minimo} />
+              <div className="flex justify-between mt-3">
+                <span className="text-sm font-black text-gray-800">{fmtNum(item.stock_actual)} <small className="text-gray-400 text-[10px]">{item.unidad}</small></span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase pt-1">Mín: {item.stock_minimo}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <footer className="text-center">
+        <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">
+          Maxipan Control Hub • 2026 • v1.2
+        </span>
+      </footer>
     </div>
   );
 }

@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { createUserService, listUsersService, toggleUserStatusService } from '../services/userService';
+import { AuthContext } from '../context/AuthContext';
 
 /* ── Subcomponentes ── */
-
 const RoleBadge = ({ rol }) => {
   const estilos = {
     administrador: 'bg-brand-100 text-brand-800 border-brand-200',
-    empleado:      'bg-blue-50  text-blue-700  border-blue-200',
+    empleado:      'bg-blue-50   text-blue-700  border-blue-200',
   };
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border capitalize ${estilos[rol] || 'bg-gray-100 text-gray-700 border-gray-200'}`}>
@@ -15,14 +15,17 @@ const RoleBadge = ({ rol }) => {
   );
 };
 
-const StatusButton = ({ activo, onClick }) => (
+const StatusButton = ({ activo, onClick, disabled = false, title = '' }) => (
   <button
     onClick={onClick}
+    disabled={disabled}
+    title={title}
     className={[
-      'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all hover:shadow-sm active:scale-95',
+      'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all',
+      disabled ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-sm active:scale-95',
       activo
         ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
-        : 'bg-red-50   text-red-600   border-red-200   hover:bg-red-100',
+        : 'bg-red-50    text-red-600    border-red-200    hover:bg-red-100',
     ].join(' ')}
   >
     <span className={`w-1.5 h-1.5 rounded-full ${activo ? 'bg-green-500' : 'bg-red-400'}`} />
@@ -58,7 +61,7 @@ const Spinner = ({ size = 'w-8 h-8', color = 'text-brand-400' }) => (
   </svg>
 );
 
-/* ── Íconos reutilizables ── */
+/* ── Íconos reutilizables (Naranja #EA580C) ── */
 
 const IconUsuario = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,6 +97,31 @@ const IconMas = () => (
   </svg>
 );
 
+/* Íconos para Estadísticas */
+const IconGroup = () => (
+  <svg className="w-8 h-8 text-[#EA580C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+  </svg>
+);
+
+const IconCheckCircle = () => (
+  <svg className="w-8 h-8 text-[#EA580C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const IconXCircle = () => (
+  <svg className="w-8 h-8 text-[#EA580C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const IconAlert = () => (
+  <svg className="w-5 h-5 text-[#EA580C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+  </svg>
+);
+
 /* ── Colores de avatar por índice ── */
 const AVATAR_COLORS = [
   'bg-brand-100 text-brand-700',
@@ -110,6 +138,7 @@ const getInitials = (nombre) =>
 /* ── Componente principal ── */
 
 export default function GestionUsuarios() {
+  const { user } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     nombre: '',
     correo: '',
@@ -154,6 +183,22 @@ export default function GestionUsuarios() {
   };
 
   const handleToggleStatus = async (id, activo) => {
+    const objetivo = usuarios.find(u => Number(u.id) === Number(id));
+    const esUsuarioActual = Number(id) === Number(user?.id);
+    const esUltimoAdminActivo =
+      objetivo?.activo &&
+      objetivo?.rol === 'administrador' &&
+      adminsActivos <= 1;
+
+    if (esUsuarioActual) {
+      alert('No puedes desactivarte a ti mismo');
+      return;
+    }
+    if (esUltimoAdminActivo) {
+      alert('Debe permanecer al menos un administrador activo');
+      return;
+    }
+
     try {
       await toggleUserStatusService(id, activo);
       cargarUsuarios();
@@ -172,6 +217,9 @@ export default function GestionUsuarios() {
 
   const totalActivos   = Array.isArray(usuarios) ? usuarios.filter(u => u.activo).length  : 0;
   const totalInactivos = Array.isArray(usuarios) ? usuarios.filter(u => !u.activo).length : 0;
+  const adminsActivos = Array.isArray(usuarios)
+    ? usuarios.filter(u => u.activo && u.rol === 'administrador').length
+    : 0;
 
   return (
     <div className="min-h-screen bg-cream">
@@ -194,9 +242,9 @@ export default function GestionUsuarios() {
         {/* Tarjetas de estadísticas */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { label: 'Total usuarios', value: usuarios.length, emoji: '👥', bg: 'bg-brand-50 border-brand-100' },
-            { label: 'Activos',        value: totalActivos,    emoji: '✅', bg: 'bg-green-50 border-green-100' },
-            { label: 'Inactivos',      value: totalInactivos,  emoji: '⛔', bg: 'bg-red-50   border-red-100'   },
+            { label: 'Total usuarios', value: usuarios.length, icon: <IconGroup />, bg: 'bg-brand-50 border-brand-100' },
+            { label: 'Activos',        value: totalActivos,   icon: <IconCheckCircle />, bg: 'bg-green-50 border-green-100' },
+            { label: 'Inactivos',      value: totalInactivos, icon: <IconXCircle />, bg: 'bg-red-50    border-red-100'   },
           ].map(stat => (
             <div key={stat.label} className={`${stat.bg} rounded-2xl border p-5`}>
               <div className="flex items-center justify-between">
@@ -204,7 +252,7 @@ export default function GestionUsuarios() {
                   <p className="text-xs font-medium text-gray-500">{stat.label}</p>
                   <p className="text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
                 </div>
-                <span className="text-3xl">{stat.emoji}</span>
+                {stat.icon}
               </div>
             </div>
           ))}
@@ -232,7 +280,7 @@ export default function GestionUsuarios() {
                       ? 'bg-red-50   border border-red-200   text-red-700'
                       : 'bg-green-50 border border-green-200 text-green-700',
                   ].join(' ')}>
-                    <span className="text-lg">{mensaje.tipo === 'error' ? '⚠️' : '✅'}</span>
+                    <IconAlert />
                     <p>{mensaje.texto}</p>
                   </div>
                 )}
@@ -342,7 +390,9 @@ export default function GestionUsuarios() {
               {/* Estado: vacío */}
               {!cargando && usuariosFiltrados.length === 0 && (
                 <div className="py-16 text-center">
-                  <div className="text-4xl mb-3">👤</div>
+                  <div className="flex justify-center text-[#EA580C] mb-3">
+                    <IconUsuario />
+                  </div>
                   <p className="text-gray-500 text-sm">
                     {busqueda ? 'No se encontraron resultados' : 'No hay usuarios registrados'}
                   </p>
@@ -367,7 +417,16 @@ export default function GestionUsuarios() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {usuariosFiltrados.map((u, i) => (
+                      {usuariosFiltrados.map((u, i) => {
+                        const esUsuarioActual = Number(u.id) === Number(user?.id);
+                        const esUltimoAdminActivo = u.activo && u.rol === 'administrador' && adminsActivos <= 1;
+                        const bloquearToggle = esUsuarioActual || esUltimoAdminActivo;
+                        const motivoBloqueo = esUsuarioActual
+                          ? 'No puedes desactivarte a ti mismo'
+                          : esUltimoAdminActivo
+                          ? 'Debe permanecer al menos un administrador activo'
+                          : '';
+                        return (
                         <tr key={u.id} className="hover:bg-gray-50 transition-colors">
 
                           {/* Columna usuario */}
@@ -393,11 +452,13 @@ export default function GestionUsuarios() {
                             <StatusButton
                               activo={u.activo}
                               onClick={() => handleToggleStatus(u.id, u.activo)}
+                              disabled={bloquearToggle}
+                              title={motivoBloqueo}
                             />
                           </td>
 
                         </tr>
-                      ))}
+                      )})}
                     </tbody>
                   </table>
                 </div>

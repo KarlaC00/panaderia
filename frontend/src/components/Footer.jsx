@@ -8,10 +8,8 @@ export default function Footer() {
 
           {/* Brand */}
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-brand-600 rounded-md flex items-center justify-center text-white text-xs">🥖</div>
             <span className="text-sm font-semibold text-gray-700">MAXIPAN</span>
             <span className="text-gray-300">·</span>
-            <span className="text-xs text-gray-400">Sistema de Gestión</span>
           </div>
 
           {/* Status badge */}

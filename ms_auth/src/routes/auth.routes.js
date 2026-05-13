@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const rateLimit = require('express-rate-limit');
 const { ipKeyGenerator } = require('express-rate-limit');
-const { login, refresh, logout, me, cambiarContrasena } = require('../controllers/auth.controller');
+const { login, refresh, logout, me, cambiarContrasena, actualizarPerfil } = require('../controllers/auth.controller');
 const { verificarToken } = require('../middleware/auth');
 
 // ── Rate limiter: 10 intentos por IP cada 15 minutos ──────────
@@ -23,6 +23,7 @@ router.post('/logout',  logout);
 
 // Rutas protegidas (requieren token válido)
 router.get('/me',                   verificarToken, me);
+router.patch('/perfil',             verificarToken, actualizarPerfil);
 router.post('/cambiar-contrasena',  verificarToken, cambiarContrasena);
 
 module.exports = router;

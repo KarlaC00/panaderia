@@ -9,6 +9,7 @@ import Ventas from './pages/Ventas';
 import Inventario from './pages/Inventario';
 import Navbar from './components/Navbar';
 import GestionUsuarios from './pages/GestionUsuarios';
+import MiPerfil from './pages/MiPerfil';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           {/* Rutas Protegidas (Cualquier usuario logueado) */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/mi-perfil" element={<MiPerfil />} />
           </Route>
 
           {/* Rutas Solo para Vendedores o Admin */}

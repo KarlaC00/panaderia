@@ -4,30 +4,30 @@ import { registrarVentaService, getHistorialVentasService } from '../services/sa
 
 /* ── Subcomponentes ── */
 
-const Spinner = ({ size = 'w-8 h-8', color = 'text-brand-400' }) => (
+const Spinner = ({ size = 'w-8 h-8', color = 'text-orange-500' }) => (
   <svg className={`animate-spin ${size} ${color}`} fill="none" viewBox="0 0 24 24">
     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
   </svg>
 );
 
-/* ── Íconos ── */
+/* ── Íconos (Color Naranja) ── */
 const IconBuscar = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
       d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
   </svg>
 );
 
-const IconCarrito = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+const IconCarrito = ({ className = "w-4 h-4 text-orange-500" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
       d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
   </svg>
 );
 
 const IconMas = () => (
-  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-3.5 h-3.5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
   </svg>
 );
@@ -47,7 +47,7 @@ const IconVenta = () => (
 );
 
 const IconRefresh = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
       d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
   </svg>
@@ -94,17 +94,13 @@ export default function Ventas() {
         item.id === prod.id ? { ...item, cantidad_vender: item.cantidad_vender + 1 } : item
       ));
     } else {
-      setCarrito([...carrito, { ...prod, cantidad_vender: 1, precio_unitario: prod.precio_venta || 0 }]);
+      setCarrito([...carrito, { ...prod, cantidad_vender: 1, precio_unitario: Number(prod.precio_unitario ?? 0) }]);
     }
   };
 
   const actualizarCantidadCarrito = (id, valor) => {
     const num = Math.max(1, Number(valor));
     setCarrito(carrito.map(item => item.id === id ? { ...item, cantidad_vender: num } : item));
-  };
-
-  const actualizarPrecioCarrito = (id, valor) => {
-    setCarrito(carrito.map(item => item.id === id ? { ...item, precio_unitario: Number(valor) } : item));
   };
 
   const quitarDelCarrito = (id) => setCarrito(carrito.filter(item => item.id !== id));
@@ -119,14 +115,20 @@ export default function Ventas() {
     }
     setProcesando(true);
     try {
-      await registrarVentaService({
-        items: carrito.map(item => ({
+      const mapaPrecios = new Map(
+        productos.map((p) => [Number(p.id), Number(p.precio_unitario ?? 0)])
+      );
+      const itemsVenta = carrito.map((item) => {
+        const precioFijo = mapaPrecios.get(Number(item.id)) ?? Number(item.precio_unitario ?? 0);
+        return {
           producto_id: item.id,
           nombre_producto: item.nombre,
           cantidad: item.cantidad_vender,
-          precio_unitario: item.precio_unitario,
-        }))
+          precio_unitario: precioFijo,
+        };
       });
+
+      await registrarVentaService({ items: itemsVenta });
       setMensaje({ texto: '¡Venta realizada con éxito!', tipo: 'success' });
       setCarrito([]);
       cargarDatos();
@@ -167,9 +169,9 @@ export default function Ventas() {
             </p>
           </div>
           {carrito.length > 0 && (
-            <div className="flex items-center gap-2 bg-brand-50 border border-brand-100 rounded-xl px-4 py-2">
-              <span className="text-brand-600"><IconCarrito /></span>
-              <span className="text-sm font-semibold text-brand-700">
+            <div className="flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-xl px-4 py-2">
+              <IconCarrito className="w-4 h-4 text-orange-600" />
+              <span className="text-sm font-semibold text-orange-700">
                 {carrito.length} producto{carrito.length !== 1 ? 's' : ''} en carrito
               </span>
             </div>
@@ -179,10 +181,10 @@ export default function Ventas() {
         {/* Tarjetas de estadísticas */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Productos',       value: productos.length,       emoji: '🥐', bg: 'bg-brand-50 border-brand-100'  },
-            { label: 'En carrito',      value: carrito.length,         emoji: '🛒', bg: 'bg-blue-50 border-blue-100'    },
-            { label: 'Ventas hoy',      value: historialAgrupado.length, emoji: '📋', bg: 'bg-green-50 border-green-100' },
-            { label: 'Total del día',   value: `$${totalHoy.toLocaleString('es-CO')}`, emoji: '💰', bg: 'bg-yellow-50 border-yellow-100', small: true },
+            { label: 'Productos', value: productos.length, bg: 'bg-orange-50 border-orange-100' },
+            { label: 'En carrito', value: carrito.length, bg: 'bg-blue-50 border-blue-100' },
+            { label: 'Ventas hoy', value: historialAgrupado.length, bg: 'bg-green-50 border-green-100' },
+            { label: 'Total del día', value: `$${totalHoy.toLocaleString('es-CO')}`, bg: 'bg-yellow-50 border-yellow-100', small: true },
           ].map(stat => (
             <div key={stat.label} className={`${stat.bg} rounded-2xl border p-5`}>
               <div className="flex items-center justify-between">
@@ -190,26 +192,24 @@ export default function Ventas() {
                   <p className="text-xs font-medium text-gray-500">{stat.label}</p>
                   <p className={`font-bold text-gray-900 mt-1 ${stat.small ? 'text-xl' : 'text-3xl'}`}>{stat.value}</p>
                 </div>
-                <span className="text-3xl">{stat.emoji}</span>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Layout principal: dos columnas */}
+        {/* Layout principal */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-          {/* ── Columna izquierda: catálogo de productos ── */}
+          {/* Catálogo de productos */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="bg-brand-600 px-6 py-5">
+            <div className="bg-orange-600 px-6 py-5">
               <h2 className="text-base font-semibold text-white">Catálogo de Productos</h2>
-              <p className="text-brand-200 text-xs mt-0.5">Selecciona para agregar al carrito</p>
+              <p className="text-orange-100 text-xs mt-0.5">Selecciona para agregar al carrito</p>
             </div>
 
             <div className="px-6 pt-4 pb-2">
-              {/* Buscador */}
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                   <IconBuscar />
                 </div>
                 <input
@@ -217,13 +217,12 @@ export default function Ventas() {
                   placeholder="Buscar producto..."
                   value={busqueda}
                   onChange={e => setBusqueda(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent focus:bg-white transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent focus:bg-white transition-all"
                 />
               </div>
               <p className="text-xs text-gray-400 mt-2 mb-1">{productosFiltrados.length} producto{productosFiltrados.length !== 1 ? 's' : ''} encontrado{productosFiltrados.length !== 1 ? 's' : ''}</p>
             </div>
 
-            {/* Tabla productos */}
             {cargando ? (
               <div className="py-16 text-center">
                 <Spinner size="w-8 h-8 mx-auto" />
@@ -231,7 +230,6 @@ export default function Ventas() {
               </div>
             ) : productosFiltrados.length === 0 ? (
               <div className="py-16 text-center">
-                <div className="text-4xl mb-3">🥐</div>
                 <p className="text-sm text-gray-500">No se encontraron productos</p>
               </div>
             ) : (
@@ -254,7 +252,7 @@ export default function Ventas() {
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-medium text-gray-900">{p.nombre}</span>
                               {enCarrito && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-bold bg-brand-100 text-brand-700">
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
                                   ×{enCarrito.cantidad_vender}
                                 </span>
                               )}
@@ -269,7 +267,7 @@ export default function Ventas() {
                           <td className="px-6 py-3.5 text-center">
                             <button
                               onClick={() => agregarAlCarrito(p)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all hover:shadow-sm active:scale-95 bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all hover:shadow-sm active:scale-95 bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"
                             >
                               <IconMas />
                               Agregar
@@ -284,17 +282,16 @@ export default function Ventas() {
             )}
           </div>
 
-          {/* ── Columna derecha: carrito ── */}
+          {/* Carrito */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
             <div className="bg-gray-800 px-6 py-5">
               <h2 className="text-base font-semibold text-white flex items-center gap-2">
-                <IconCarrito />
+                <IconCarrito className="w-4 h-4 text-orange-500" />
                 Detalle de Venta Actual
               </h2>
-              <p className="text-gray-400 text-xs mt-0.5">Revisa cantidades y precios antes de finalizar</p>
+              <p className="text-gray-400 text-xs mt-0.5">Revisa cantidades antes de finalizar</p>
             </div>
 
-            {/* Mensaje */}
             {mensaje.texto && (
               <div className={[
                 'mx-6 mt-4 flex items-start gap-3 rounded-xl px-4 py-3 text-sm',
@@ -302,15 +299,12 @@ export default function Ventas() {
                   ? 'bg-red-50 border border-red-200 text-red-700'
                   : 'bg-green-50 border border-green-200 text-green-700',
               ].join(' ')}>
-                <span className="text-lg">{mensaje.tipo === 'error' ? '⚠️' : '✅'}</span>
                 <p>{mensaje.texto}</p>
               </div>
             )}
 
-            {/* Carrito vacío */}
             {carrito.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center py-16 text-center px-6">
-                <div className="text-5xl mb-4">🛒</div>
                 <p className="text-gray-500 text-sm font-medium">Carrito vacío</p>
                 <p className="text-gray-400 text-xs mt-1">Agrega productos desde el catálogo</p>
               </div>
@@ -338,20 +332,13 @@ export default function Ventas() {
                             min="1"
                             value={item.cantidad_vender}
                             onChange={e => actualizarCantidadCarrito(item.id, e.target.value)}
-                            className="w-16 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
+                            className="w-16 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <div className="relative w-24">
-                            <span className="absolute inset-y-0 left-2.5 flex items-center text-gray-400 text-sm">$</span>
-                            <input
-                              type="number"
-                              min="0"
-                              value={item.precio_unitario}
-                              onChange={e => actualizarPrecioCarrito(item.id, e.target.value)}
-                              className="w-full pl-5 pr-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
-                            />
-                          </div>
+                          <span className="text-sm font-semibold text-gray-800">
+                            ${Number(item.precio_unitario || 0).toLocaleString('es-CO')}
+                          </span>
                         </td>
                         <td className="px-4 py-3">
                           <span className="text-sm font-bold text-gray-900">
@@ -373,7 +360,6 @@ export default function Ventas() {
               </div>
             )}
 
-            {/* Footer del carrito */}
             <div className="px-6 py-5 border-t border-gray-100 bg-gray-50 mt-auto">
               <div className="flex items-center justify-between">
                 <div>
@@ -385,7 +371,7 @@ export default function Ventas() {
                 <button
                   onClick={handleVender}
                   disabled={carrito.length === 0 || procesando}
-                  className="flex items-center gap-2 bg-[#EA580C] hover:bg-[#C2410C] disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98]"
+                  className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98]"
                 >
                   {procesando ? (
                     <>
@@ -404,7 +390,7 @@ export default function Ventas() {
           </div>
         </div>
 
-        {/* ── Historial de ventas ── */}
+        {/* Historial de ventas */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <div>
@@ -422,7 +408,6 @@ export default function Ventas() {
 
           {errorHistorial ? (
             <div className="m-6 flex items-start gap-3 bg-yellow-50 border border-yellow-200 rounded-xl px-5 py-4">
-              <span className="text-2xl">⚠️</span>
               <div>
                 <p className="text-sm font-semibold text-yellow-800">Historial no disponible</p>
                 <p className="text-xs text-yellow-700 mt-0.5">El microservicio de ventas puede estar en mantenimiento.</p>
@@ -442,7 +427,6 @@ export default function Ventas() {
             </div>
           ) : historialAgrupado.length === 0 ? (
             <div className="py-14 text-center">
-              <div className="text-4xl mb-3">📋</div>
               <p className="text-sm text-gray-500">No hay ventas registradas hoy</p>
             </div>
           ) : (

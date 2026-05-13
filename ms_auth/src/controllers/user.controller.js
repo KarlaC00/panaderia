@@ -90,8 +90,9 @@ const crear = async (req, res) => {
 const actualizar = async (req, res) => {
     const { id } = req.params;
     const { nombre, rol } = req.body;
+    const userId = Number(id);
 
-    if (!Number.isInteger(Number(id)) || Number(id) <= 0) {
+    if (!Number.isInteger(userId) || userId <= 0) {
         return res.status(400).json({ error: 'ID de usuario inválido' });
     }
     if (nombre !== undefined && (typeof nombre !== 'string' || nombre.length > 100 || nombre.trim() === '')) {
@@ -99,6 +100,14 @@ const actualizar = async (req, res) => {
     }
 
     try {
+        const usuarioActual = await pool.query(
+            'SELECT id, rol, activo FROM usuario WHERE id = $1',
+            [id]
+        );
+        if (usuarioActual.rows.length === 0) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
         const campos = [];
         const valores = [];
         let i = 1;
@@ -110,6 +119,23 @@ const actualizar = async (req, res) => {
         if (rol !== undefined) {
             if (!['administrador', 'empleado'].includes(rol))
                 return res.status(400).json({ error: 'Rol inválido' });
+
+            if (userId === req.usuario.id && usuarioActual.rows[0].rol === 'administrador' && rol === 'empleado') {
+                return res.status(403).json({ error: 'No puedes cambiar tu propio rol de administrador a empleado' });
+            }
+
+            // Siempre debe quedar al menos un administrador activo.
+            if (usuarioActual.rows[0].rol === 'administrador' && rol === 'empleado' && usuarioActual.rows[0].activo) {
+                const adminsActivos = await pool.query(
+                    'SELECT COUNT(*) FROM usuario WHERE rol = $1 AND activo = true',
+                    ['administrador']
+                );
+                if (parseInt(adminsActivos.rows[0].count) <= 1) {
+                    return res.status(403).json({
+                        error: 'No se puede cambiar el rol del único administrador activo del sistema'
+                    });
+                }
+            }
             campos.push(`rol = $${i++}`);
             valores.push(rol);
         }

@@ -53,32 +53,28 @@ const SelectField = ({ label, children, ...props }) => (
   </div>
 );
 
-/* ── Íconos ── */
+/* ── Íconos SVG Naranjas ── */
 const IconCaja = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
   </svg>
 );
 
 const IconRuler = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 7h16a1 1 0 011 1v8a1 1 0 01-1 1H4a1 1 0 01-1-1V8a1 1 0 011-1z" />
+  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 7h16a1 1 0 011 1v8a1 1 0 01-1 1H4a1 1 0 01-1-1V8a1 1 0 011-1z" />
   </svg>
 );
 
 const IconAlerta = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
   </svg>
 );
 
 const IconTrash = () => (
-  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
   </svg>
 );
 
@@ -89,23 +85,58 @@ const IconMas = () => (
 );
 
 const IconReceta = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
   </svg>
 );
 
 const IconHistorial = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
 
 const IconBuscar = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
+);
+
+const IconCheck = () => (
+    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+    </svg>
+);
+
+const IconPan = () => (
+  <svg 
+    className="w-8 h-8 text-orange-600" 
+    fill="none" 
+    viewBox="0 0 24 24" 
+    stroke="currentColor"
+  >
+    <path 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      strokeWidth={1.5} 
+      d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0-.621.504 1.125 1.125 1.125z" 
+    />
+  </svg>
+);
+
+const IconTrigo = () => (
+  <svg 
+    className="w-8 h-8 text-orange-600" 
+    fill="none" 
+    viewBox="0 0 24 24" 
+    stroke="currentColor"
+  >
+    <path 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      strokeWidth={1.5} 
+      d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12 1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" 
+    />
   </svg>
 );
 
@@ -128,6 +159,7 @@ export default function Inventario() {
     nombre: '',
     unidad_medida: 'unidades',
     stock_minimo: 0,
+    precio_unitario: '',
   });
 
   const cargarDatos = useCallback(async () => {
@@ -162,13 +194,21 @@ export default function Inventario() {
     e.preventDefault();
     try {
       if (tab === 'productos') {
-        await createProductService(newData);
+        const precio = Number(newData.precio_unitario);
+        if (!Number.isFinite(precio) || precio < 0) {
+          setMensaje({ texto: 'Debes ingresar un precio unitario valido para el producto', tipo: 'error' });
+          return;
+        }
+        await createProductService({
+          ...newData,
+          precio_unitario: precio,
+        });
       } else {
         await createInsumoService(newData);
       }
       setMensaje({ texto: 'Registrado con éxito', tipo: 'success' });
       setShowForm(false);
-      setNewData({ nombre: '', unidad_medida: 'unidades', stock_minimo: 0 });
+      setNewData({ nombre: '', unidad_medida: 'unidades', stock_minimo: 0, precio_unitario: '' });
       cargarDatos();
     } catch (err) {
       setMensaje({ texto: err.message, tipo: 'error' });
@@ -196,8 +236,9 @@ export default function Inventario() {
     item.nombre?.toLowerCase().includes(busqueda.toLowerCase())
   );
   const stockBajoCount = listaActual.filter(item => {
-    const stock = tab === 'productos' ? (item.stock_estimado || 0) : (item.stock_actual || 0);
-    return stock <= (item.stock_minimo || 0);
+    const stock = Number(tab === 'productos' ? (item.stock_estimado ?? 0) : (item.stock_actual ?? 0));
+    const minimo = Number(item.stock_minimo ?? 0);
+    return stock <= minimo;
   }).length;
 
   return (
@@ -225,10 +266,10 @@ export default function Inventario() {
         {/* Tarjetas de estadísticas */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Productos',  value: productos.length, emoji: '🥐', bg: 'bg-brand-50 border-brand-100'    },
-            { label: 'Insumos',    value: insumos.length,   emoji: '🌾', bg: 'bg-blue-50 border-blue-100'      },
-            { label: 'Stock bajo', value: stockBajoCount,   emoji: '⚠️', bg: 'bg-yellow-50 border-yellow-100'  },
-            { label: 'Alertas',    value: totalAlertas,     emoji: '🔔', bg: 'bg-red-50 border-red-100'        },
+            { label: 'Productos',  value: productos.length, icon: <IconPan />, bg: 'bg-brand-50 border-brand-100'    },
+            { label: 'Insumos',    value: insumos.length,   icon: <IconTrigo />, bg: 'bg-blue-50 border-blue-100'      },
+            { label: 'Stock bajo', value: stockBajoCount,   icon: <IconAlerta />, bg: 'bg-yellow-50 border-yellow-100'  },
+            { label: 'Alertas',    value: totalAlertas,     icon: <IconAlerta />, bg: 'bg-red-50 border-red-100'        },
           ].map(stat => (
             <div key={stat.label} className={`${stat.bg} rounded-2xl border p-5`}>
               <div className="flex items-center justify-between">
@@ -236,7 +277,7 @@ export default function Inventario() {
                   <p className="text-xs font-medium text-gray-500">{stat.label}</p>
                   <p className="text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
                 </div>
-                <span className="text-3xl">{stat.emoji}</span>
+                <span>{stat.icon}</span>
               </div>
             </div>
           ))}
@@ -267,7 +308,7 @@ export default function Inventario() {
                         ? 'bg-red-50 border border-red-200 text-red-700'
                         : 'bg-green-50 border border-green-200 text-green-700',
                     ].join(' ')}>
-                      <span className="text-lg">{mensaje.tipo === 'error' ? '⚠️' : '✅'}</span>
+                      <span className="shrink-0">{mensaje.tipo === 'error' ? <IconAlerta /> : <IconCheck />}</span>
                       <p>{mensaje.texto}</p>
                     </div>
                   )}
@@ -318,6 +359,18 @@ export default function Inventario() {
                         onChange={e => setNewData({ ...newData, stock_minimo: e.target.value })}
                         icon={<IconRuler />}
                       />
+                      {tab === 'productos' && (
+                        <InputField
+                          label="Precio unitario"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="0"
+                          value={newData.precio_unitario}
+                          onChange={e => setNewData({ ...newData, precio_unitario: e.target.value })}
+                          required
+                        />
+                      )}
                       <div className="flex gap-2 pt-1">
                         <button
                           type="submit"
@@ -355,7 +408,7 @@ export default function Inventario() {
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
               <div className={`px-6 py-4 border-b border-gray-100 flex items-center justify-between ${totalAlertas > 0 ? 'bg-red-50' : ''}`}>
                 <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-                  <span className="text-gray-500"><IconAlerta /></span>
+                  <IconAlerta />
                   Alertas
                 </h2>
                 {totalAlertas > 0 && (
@@ -368,7 +421,9 @@ export default function Inventario() {
               <div className="p-4 space-y-3">
                 {alertasStockBajo.map(a => (
                   <div key={a.id} className="bg-red-50 border border-red-200 border-l-4 border-l-red-500 rounded-xl p-3">
-                    <p className="text-xs font-semibold text-red-700">📉 Stock bajo mínimo</p>
+                    <p className="text-xs font-semibold text-red-700 flex items-center gap-1">
+                        <IconAlerta /> Stock bajo mínimo
+                    </p>
                     <p className="text-sm font-medium text-gray-900 mt-0.5">{a.insumo || 'Insumo desconocido'}</p>
                     <p className="text-xs text-red-600 mt-1">Stock actual: <strong>{a.stock_al_momento}</strong></p>
                   </div>
@@ -376,7 +431,9 @@ export default function Inventario() {
 
                 {alertasLoteBD.map(a => (
                   <div key={a.id} className="bg-yellow-50 border border-yellow-200 border-l-4 border-l-yellow-500 rounded-xl p-3">
-                    <p className="text-xs font-semibold text-yellow-700">📅 Lote por vencer</p>
+                    <p className="text-xs font-semibold text-yellow-700 flex items-center gap-1">
+                        <IconHistorial /> Lote por vencer
+                    </p>
                     <p className="text-sm font-medium text-gray-900 mt-0.5">{a.insumo || 'Insumo desconocido'}</p>
                   </div>
                 ))}
@@ -388,8 +445,9 @@ export default function Inventario() {
                       ? 'bg-red-50 border border-red-200 border-l-red-500'
                       : 'bg-yellow-50 border border-yellow-200 border-l-yellow-500',
                   ].join(' ')}>
-                    <p className={`text-xs font-semibold ${l.estado === 'vencido' ? 'text-red-700' : 'text-yellow-700'}`}>
-                      {l.estado === 'vencido' ? '❌ VENCIDO' : '🕐 Por vencer'}
+                    <p className={`text-xs font-semibold ${l.estado === 'vencido' ? 'text-red-700' : 'text-yellow-700'} flex items-center gap-1`}>
+                      {l.estado === 'vencido' ? <IconAlerta /> : <IconHistorial />}
+                      {l.estado === 'vencido' ? 'VENCIDO' : 'Por vencer'}
                     </p>
                     <p className="text-sm font-medium text-gray-900 mt-0.5">{l.insumo || 'Insumo desconocido'}</p>
                     <p className="text-xs text-gray-500 mt-0.5">
@@ -400,9 +458,9 @@ export default function Inventario() {
                 ))}
 
                 {totalAlertas === 0 && (
-                  <div className="py-6 text-center">
-                    <div className="text-3xl mb-2">✅</div>
-                    <p className="text-sm text-gray-500">Sin alertas activas</p>
+                  <div className="py-6 text-center flex flex-col items-center">
+                    <IconCheck />
+                    <p className="text-sm text-gray-500 mt-2">Sin alertas activas</p>
                   </div>
                 )}
               </div>
@@ -411,7 +469,9 @@ export default function Inventario() {
             {/* Registrar Lote */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="bg-green-600 px-6 py-4">
-                <h2 className="text-base font-semibold text-white">📥 Entrada de Mercancía</h2>
+                <h2 className="text-base font-semibold text-white flex items-center gap-2">
+                    <IconCaja /> Entrada de Mercancía
+                </h2>
                 <p className="text-green-200 text-xs mt-0.5">Registro de nuevo lote</p>
               </div>
               <div className="p-4">
@@ -430,21 +490,21 @@ export default function Inventario() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
                     {[
-                      { key: 'productos', label: 'Productos', emoji: '🥐' },
-                      { key: 'insumos',   label: 'Insumos',   emoji: '🌾' },
-                      { key: 'historial', label: 'Historial', emoji: '📜' },
+                      { key: 'productos', label: 'Productos', icon: <IconPan /> },
+                      { key: 'insumos',   label: 'Insumos',   icon: <IconTrigo /> },
+                      { key: 'historial', label: 'Historial', icon: <IconHistorial /> },
                     ].map(t => (
                       <button
                         key={t.key}
                         onClick={() => { setTab(t.key); setBusqueda(''); setShowForm(false); }}
                         className={[
-                          'flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                          'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
                           tab === t.key
                             ? 'bg-white text-gray-900 shadow-sm'
                             : 'text-gray-500 hover:text-gray-700',
                         ].join(' ')}
                       >
-                        <span>{t.emoji}</span>
+                        <span className="scale-75">{t.icon}</span>
                         {t.label}
                       </button>
                     ))}
@@ -479,8 +539,10 @@ export default function Inventario() {
               {!cargando && tab !== 'historial' && (
                 <>
                   {listaFiltrada.length === 0 ? (
-                    <div className="py-16 text-center">
-                      <div className="text-4xl mb-3">{tab === 'productos' ? '🥐' : '🌾'}</div>
+                    <div className="py-16 text-center flex flex-col items-center">
+                      <div className="mb-3 opacity-20">
+                         {tab === 'productos' ? <IconPan /> : <IconTrigo />}
+                      </div>
                       <p className="text-gray-500 text-sm">
                         {busqueda ? 'No se encontraron resultados' : `No hay ${tab} registrados`}
                       </p>
@@ -500,10 +562,13 @@ export default function Inventario() {
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                           {listaFiltrada.map(item => {
-                            const stockActual = tab === 'productos'
-                              ? (item.stock_estimado || 0)
-                              : (item.stock_actual || 0);
-                            const enMinimo = stockActual <= (item.stock_minimo || 0);
+                            const stockActual = Number(
+                              tab === 'productos'
+                                ? (item.stock_estimado ?? 0)
+                                : (item.stock_actual ?? 0)
+                            );
+                            const minimo = Number(item.stock_minimo ?? 0);
+                            const enMinimo = stockActual <= minimo;
                             return (
                               <tr key={item.id} className={`hover:bg-gray-50 transition-colors ${enMinimo ? 'bg-yellow-50/40' : ''}`}>
                                 <td className="px-6 py-4">
@@ -525,7 +590,7 @@ export default function Inventario() {
                                 </td>
                                 <td className="px-6 py-4">
                                   <span className="text-sm text-gray-600">
-                                    {Number(item.stock_minimo || 0).toLocaleString('es-CO')}
+                                    {minimo.toLocaleString('es-CO')}
                                   </span>
                                 </td>
                                 <td className="px-6 py-4 text-center">
@@ -559,8 +624,8 @@ export default function Inventario() {
               {!cargando && tab === 'historial' && (
                 <>
                   {movimientos.length === 0 ? (
-                    <div className="py-16 text-center">
-                      <div className="text-4xl mb-3">📜</div>
+                    <div className="py-16 text-center flex flex-col items-center">
+                      <div className="opacity-20 mb-3"><IconHistorial /></div>
                       <p className="text-gray-500 text-sm">No hay movimientos registrados</p>
                     </div>
                   ) : (

@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import pan from '../assets/pan.svg';
 
 export default function Navbar() {
   const { user, logout } = useContext(AuthContext);
@@ -52,10 +53,20 @@ export default function Navbar() {
 
           {/* Logo */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white text-lg">
-              🥖
+            {/* Contenedor del Logo */}
+            <div className="w-8 h-8 flex items-center justify-center overflow-hidden">
+              <img
+                src={pan}
+                alt="Logo MAXIPAN"
+                style={{ filter: 'drop-shadow(0px 0px 0px #F97316) saturate(5) hue-rotate(15deg)' }}
+                className="w-full h-full object-contain"
+              />
             </div>
-            <span className="font-bold text-gray-900 text-lg hidden sm:block">MAXIPAN</span>
+            
+            {/* Texto del Logo */}
+            <span className="font-bold text-gray-900 text-lg hidden sm:block">
+              MAXIPAN
+            </span>
           </div>
 
           {/* Links escritorio */}
@@ -74,6 +85,14 @@ export default function Navbar() {
                   d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
               Ventas
+            </NavLink>
+
+            <NavLink to="/mi-perfil">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M5.121 17.804A9 9 0 1118.88 17.8M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Mi perfil
             </NavLink>
 
             {user.rol === 'administrador' && (
@@ -141,6 +160,7 @@ export default function Navbar() {
           <div className="md:hidden border-t border-gray-100 py-3 space-y-1">
             <NavLink to="/dashboard">Inicio</NavLink>
             <NavLink to="/ventas">Ventas</NavLink>
+            <NavLink to="/mi-perfil">Mi perfil</NavLink>
 
             {user.rol === 'administrador' && (
               <>

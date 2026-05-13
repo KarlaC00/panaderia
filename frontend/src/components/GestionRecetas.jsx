@@ -1,5 +1,22 @@
 import { useState, useEffect } from 'react';
 
+// Componentes SVG internos para evitar dependencias externas
+const IconPlus = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f39c12" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+);
+const IconEdit = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f39c12" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+);
+const IconTrash = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f39c12" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+);
+const IconSave = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+);
+const IconSettings = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f39c12" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+);
+
 export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
   const [modo, setModo] = useState('crear');
   const [productoId, setProductoId] = useState('');
@@ -131,7 +148,7 @@ export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
 
       if (response.ok) {
         setMensaje({
-          texto: esEdicion ? '✅ ¡Receta actualizada con éxito!' : '✅ ¡Receta guardada con éxito!',
+          texto: esEdicion ? 'Receta actualizada con éxito' : 'Receta guardada con éxito',
           tipo: 'success'
         });
         setIngredientesSeleccionados([]);
@@ -156,7 +173,10 @@ export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
 
   return (
     <div style={containerStyle}>
-      <h3 style={{ marginTop: 0 }}>🛠 Gestión de Fichas Técnicas (Recetas)</h3>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+        <IconSettings />
+        <h3 style={{ margin: 0 }}>Gestión de Fichas Técnicas (Recetas)</h3>
+      </div>
 
       <div style={toggleContainer}>
         <button
@@ -164,14 +184,18 @@ export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
           onClick={() => { setModo('crear'); setProductoId(''); setIngredientesSeleccionados([]); setMensaje({ texto: '', tipo: '' }); }}
           style={modo === 'crear' ? btnToggleActive : btnToggle}
         >
-          ➕ Crear nueva receta
+          <div style={btnContentStyle}>
+            <IconPlus /> Crear nueva receta
+          </div>
         </button>
         <button
           type="button"
           onClick={() => { setModo('editar'); setProductoId(''); setIngredientesSeleccionados([]); setMensaje({ texto: '', tipo: '' }); }}
           style={modo === 'editar' ? btnToggleActive : btnToggle}
         >
-          ✏️ Modificar receta existente
+          <div style={btnContentStyle}>
+            <IconEdit /> Modificar receta existente
+          </div>
         </button>
       </div>
 
@@ -182,7 +206,7 @@ export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
       )}
 
       <div style={sectionStyle}>
-        <label>1. Seleccionar Producto{modo === 'editar' ? ' (con receta)' : ''}:</label>
+        <label style={labelStyle}>1. Seleccionar Producto{modo === 'editar' ? ' (con receta)' : ''}:</label>
         <select
           style={inputStyle}
           value={productoId}
@@ -197,7 +221,7 @@ export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
       </div>
 
       <div style={sectionStyle}>
-        <label>2. Ingredientes:</label>
+        <label style={labelStyle}>2. Ingredientes:</label>
         <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
           <select
             style={inputStyle}
@@ -216,7 +240,9 @@ export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
             value={nuevoIngrediente.cantidad}
             onChange={(e) => setNuevoIngrediente({ ...nuevoIngrediente, cantidad: e.target.value })}
           />
-          <button type="button" onClick={agregarIngredienteALista} style={btnPlus}>+</button>
+          <button type="button" onClick={agregarIngredienteALista} style={btnPlusAction}>
+             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
         </div>
 
         <div style={listContainer}>
@@ -245,8 +271,10 @@ export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
                       />
                     </td>
                     <td style={{ padding: '6px 8px', color: '#666' }}>{ing.unidad}</td>
-                    <td style={{ padding: '6px 8px' }}>
-                      <button type="button" onClick={() => eliminarDeLista(idx)} style={btnDelete}>🗑</button>
+                    <td style={{ padding: '6px 8px', textAlign: 'right' }}>
+                      <button type="button" onClick={() => eliminarDeLista(idx)} style={btnDelete}>
+                        <IconTrash />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -257,7 +285,10 @@ export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
       </div>
 
       <button onClick={handleSubmit} style={btnGuardar}>
-        {modo === 'crear' ? '💾 Guardar Receta Nueva' : '💾 Guardar Cambios'}
+        <div style={{ ...btnContentStyle, justifyContent: 'center', gap: '10px' }}>
+          <IconSave />
+          {modo === 'crear' ? 'Guardar Receta Nueva' : 'Guardar Cambios'}
+        </div>
       </button>
 
       {mensaje.texto && (
@@ -265,6 +296,7 @@ export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
           marginTop: '15px',
           padding: '10px',
           borderRadius: '4px',
+          textAlign: 'center',
           backgroundColor:
             mensaje.tipo === 'error' ? '#f8d7da'
             : mensaje.tipo === 'info' ? '#d1ecf1'
@@ -281,7 +313,7 @@ export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
 
       {recetasExistentes.length > 0 && (
         <div style={{ marginTop: '20px' }}>
-          <h4 style={{ color: '#555', marginBottom: '8px' }}>📋 Recetas activas registradas</h4>
+          <h4 style={{ color: '#555', marginBottom: '8px' }}>Recetas activas registradas</h4>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9em' }}>
             <thead>
               <tr style={{ backgroundColor: '#f4f4f4' }}>
@@ -310,16 +342,19 @@ export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
   );
 }
 
-const containerStyle = { backgroundColor: '#fff', padding: '20px', borderRadius: '8px', border: '2px solid #6c757d', marginTop: '20px' };
+// Estilos actualizados
+const containerStyle = { backgroundColor: '#fff', padding: '20px', borderRadius: '8px', border: '2px solid #6c757d', marginTop: '20px', fontFamily: 'sans-serif' };
 const sectionStyle = { marginBottom: '15px' };
+const labelStyle = { display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#444' };
 const inputStyle = { padding: '10px', borderRadius: '4px', border: '1px solid #ccc', width: '100%', boxSizing: 'border-box' };
-const btnPlus = { backgroundColor: '#333', color: '#fff', border: 'none', padding: '0 20px', borderRadius: '4px', cursor: 'pointer', fontSize: '24px' };
-const btnGuardar = { backgroundColor: '#28a745', color: '#fff', border: 'none', padding: '12px', width: '100%', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' };
+const btnPlusAction = { backgroundColor: '#f39c12', color: '#fff', border: 'none', padding: '0 15px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center' };
+const btnGuardar = { backgroundColor: '#28a745', color: '#fff', border: 'none', padding: '12px', width: '100%', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' };
 const listContainer = { backgroundColor: '#f8f9fa', padding: '10px', borderRadius: '6px', border: '1px solid #eee', minHeight: '50px' };
-const btnDelete = { color: '#dc3545', border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.1em' };
+const btnDelete = { border: 'none', background: 'none', cursor: 'pointer', padding: '4px' };
 const toggleContainer = { display: 'flex', gap: '10px', marginBottom: '20px' };
-const btnToggle = { padding: '8px 16px', border: '2px solid #6c757d', borderRadius: '6px', cursor: 'pointer', backgroundColor: '#fff', color: '#6c757d', fontWeight: 'bold' };
-const btnToggleActive = { ...btnToggle, backgroundColor: '#6c757d', color: '#fff' };
+const btnToggle = { padding: '10px 16px', border: '2px solid #6c757d', borderRadius: '6px', cursor: 'pointer', backgroundColor: '#fff', color: '#6c757d', fontWeight: 'bold', flex: 1 };
+const btnToggleActive = { ...btnToggle, backgroundColor: '#f8f9fa', borderColor: '#f39c12', color: '#f39c12' };
+const btnContentStyle = { display: 'flex', alignItems: 'center', gap: '8px' };
 const th = { padding: '8px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6' };
 const td = { padding: '8px 12px' };
-const badge = { display: 'inline-block', margin: '2px 4px', padding: '2px 8px', backgroundColor: '#e9ecef', borderRadius: '12px', fontSize: '0.85em' };
+const badge = { display: 'inline-block', margin: '2px 4px', padding: '2px 8px', backgroundColor: '#fff3e0', border: '1px solid #ffe0b2', borderRadius: '12px', fontSize: '0.85em', color: '#e65100' };

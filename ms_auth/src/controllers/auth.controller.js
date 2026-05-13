@@ -200,4 +200,71 @@ const cambiarContrasena = async (req, res) => {
   }
 };
 
-module.exports = { login, refresh, logout, me, cambiarContrasena };
+// ── PATCH /auth/perfil ─────────────────────────────────────────
+const actualizarPerfil = async (req, res) => {
+  const { nombre, correo } = req.body;
+
+  if (nombre === undefined && correo === undefined) {
+    return res.status(400).json({ error: 'Debes enviar nombre o correo para actualizar' });
+  }
+
+  if (nombre !== undefined) {
+    if (typeof nombre !== 'string' || nombre.trim() === '' || nombre.length > 100) {
+      return res.status(400).json({ error: 'Nombre inválido' });
+    }
+  }
+
+  if (correo !== undefined) {
+    if (typeof correo !== 'string' || correo.length > 254) {
+      return res.status(400).json({ error: 'Correo inválido' });
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(correo)) {
+      return res.status(400).json({ error: 'Formato de correo inválido' });
+    }
+  }
+
+  try {
+    if (correo !== undefined) {
+      const duplicado = await pool.query(
+        'SELECT id FROM usuario WHERE correo = $1 AND id <> $2 LIMIT 1',
+        [correo, req.usuario.id]
+      );
+      if (duplicado.rows.length > 0) {
+        return res.status(409).json({ error: 'El correo ya está registrado por otro usuario' });
+      }
+    }
+
+    const campos = [];
+    const valores = [];
+    let idx = 1;
+
+    if (nombre !== undefined) {
+      campos.push(`nombre = $${idx++}`);
+      valores.push(nombre.trim());
+    }
+    if (correo !== undefined) {
+      campos.push(`correo = $${idx++}`);
+      valores.push(correo.trim().toLowerCase());
+    }
+
+    valores.push(req.usuario.id);
+    const result = await pool.query(
+      `UPDATE usuario
+       SET ${campos.join(', ')}
+       WHERE id = $${idx}
+       RETURNING id, nombre, correo, rol, activo`,
+      valores
+    );
+
+    res.json({
+      mensaje: 'Perfil actualizado correctamente',
+      usuario: result.rows[0]
+    });
+  } catch (err) {
+    console.error('[actualizarPerfil]', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+module.exports = { login, refresh, logout, me, cambiarContrasena, actualizarPerfil };

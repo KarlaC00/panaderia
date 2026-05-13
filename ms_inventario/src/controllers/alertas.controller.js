@@ -2,6 +2,17 @@ const pool = require('../config/db');
 
 const listarActivas = async (req, res) => {
   try {
+    // Limpia alertas antiguas de stock bajo si el insumo ya se recupero.
+    await pool.query(
+      `UPDATE alerta a
+       SET resuelta = true, resuelta_en = NOW()
+       FROM insumo i
+       WHERE a.insumo_id = i.id
+         AND a.tipo = 'stock_bajo'
+         AND a.resuelta = false
+         AND i.stock_actual > i.stock_minimo`
+    );
+
     const result = await pool.query(
       `SELECT a.id, a.tipo, a.stock_al_momento, a.generada_en,
               i.nombre AS insumo, p.nombre AS producto
