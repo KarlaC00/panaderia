@@ -183,19 +183,18 @@ export default function GestionUsuarios() {
   };
 
   const handleToggleStatus = async (id, activo) => {
-    const objetivo = usuarios.find(u => Number(u.id) === Number(id));
-    const esUsuarioActual = Number(id) === Number(user?.id);
+    const objetivo = usuarios.find(u => String(u.id) === String(id));
+    const esUsuarioActual = user?.id != null && String(id) === String(user.id);
     const esUltimoAdminActivo =
       objetivo?.activo &&
       objetivo?.rol === 'administrador' &&
       adminsActivos <= 1;
 
+    // Doble protección: aunque el botón esté disabled, bloqueamos aquí también
     if (esUsuarioActual) {
-      alert('No puedes desactivarte a ti mismo');
-      return;
+      return; // No hacer nada; el botón ya está deshabilitado visualmente
     }
     if (esUltimoAdminActivo) {
-      alert('Debe permanecer al menos un administrador activo');
       return;
     }
 
@@ -418,7 +417,7 @@ export default function GestionUsuarios() {
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                       {usuariosFiltrados.map((u, i) => {
-                        const esUsuarioActual = Number(u.id) === Number(user?.id);
+                        const esUsuarioActual = user?.id != null && String(u.id) === String(user.id);
                         const esUltimoAdminActivo = u.activo && u.rol === 'administrador' && adminsActivos <= 1;
                         const bloquearToggle = esUsuarioActual || esUltimoAdminActivo;
                         const motivoBloqueo = esUsuarioActual
@@ -451,10 +450,15 @@ export default function GestionUsuarios() {
                           <td className="px-6 py-4">
                             <StatusButton
                               activo={u.activo}
-                              onClick={() => handleToggleStatus(u.id, u.activo)}
+                              onClick={() => !bloquearToggle && handleToggleStatus(u.id, u.activo)}
                               disabled={bloquearToggle}
-                              title={motivoBloqueo}
+                              title={motivoBloqueo || (u.activo ? 'Desactivar usuario' : 'Activar usuario')}
                             />
+                            {esUsuarioActual && (
+                              <span className="text-xs text-gray-400 ml-1" title="Tu propia cuenta">
+                                (tú)
+                              </span>
+                            )}
                           </td>
 
                         </tr>

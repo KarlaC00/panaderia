@@ -26,8 +26,7 @@ function App() {
             <Route path="/mi-perfil" element={<MiPerfil />} />
           </Route>
 
-          {/* Rutas Solo para Vendedores o Admin */}
-          <Route element={<ProtectedRoute allowedRoles={['administrador', 'vendedor']} />}>
+          <Route element={<ProtectedRoute allowedRoles={['administrador', 'empleado']} />}>
             <Route path="/ventas" element={<Ventas />} />
           </Route>
 

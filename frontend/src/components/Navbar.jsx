@@ -65,7 +65,7 @@ export default function Navbar() {
             
             {/* Texto del Logo */}
             <span className="font-bold text-gray-900 text-lg hidden sm:block">
-              MAXIPAN
+              MAXICONTROL
             </span>
           </div>
 

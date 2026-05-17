@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import { getInventoryService } from '../services/inventoryService';
 import { registrarVentaService, getHistorialVentasService } from '../services/salesService';
 
@@ -56,6 +57,7 @@ const IconRefresh = () => (
 /* ── Componente principal ── */
 
 export default function Ventas() {
+  const { user } = useContext(AuthContext);
   const [productos, setProductos] = useState([]);
   const [carrito, setCarrito] = useState([]);
   const [historial, setHistorial] = useState([]);
@@ -64,10 +66,13 @@ export default function Ventas() {
   const [errorHistorial, setErrorHistorial] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState(false);
+  const [pagina, setPagina] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const LIMITE = 7;
 
-  useEffect(() => { cargarDatos(); }, []);
+  useEffect(() => { cargarDatos(pagina); }, [pagina]);
 
-  const cargarDatos = async () => {
+  const cargarDatos = async (paginaActual = 1) => {
     setCargando(true);
     try {
       const inv = await getInventoryService();
@@ -76,8 +81,16 @@ export default function Ventas() {
       setMensaje({ texto: 'Error al cargar el inventario', tipo: 'error' });
     }
     try {
-      const hist = await getHistorialVentasService();
+      const hoy = new Date().toISOString().split('T')[0];
+      const filtros = user?.rol === 'administrador'
+        ? { page: paginaActual, limit: LIMITE }
+        : { fecha_inicio: hoy, fecha_fin: hoy, page: paginaActual, limit: LIMITE };
+      const hist = await getHistorialVentasService(filtros);
       setHistorial(hist.datos || hist || []);
+      if (hist.paginacion) {
+        const total = hist.paginacion.total || 0;
+        setTotalPaginas(Math.max(1, Math.ceil(total / LIMITE)));
+      }
       setErrorHistorial(false);
     } catch (err) {
       setErrorHistorial(true);
@@ -131,7 +144,7 @@ export default function Ventas() {
       await registrarVentaService({ items: itemsVenta });
       setMensaje({ texto: '¡Venta realizada con éxito!', tipo: 'success' });
       setCarrito([]);
-      cargarDatos();
+      setPagina(1);
       setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000);
     } catch (err) {
       setMensaje({ texto: err.message, tipo: 'error' });
@@ -183,7 +196,7 @@ export default function Ventas() {
           {[
             { label: 'Productos', value: productos.length, bg: 'bg-orange-50 border-orange-100' },
             { label: 'En carrito', value: carrito.length, bg: 'bg-blue-50 border-blue-100' },
-            { label: 'Ventas hoy', value: historialAgrupado.length, bg: 'bg-green-50 border-green-100' },
+            { label: user?.rol === 'administrador' ? 'Total ventas' : 'Ventas hoy', value: historialAgrupado.length, bg: 'bg-green-50 border-green-100' },
             { label: 'Total del día', value: `$${totalHoy.toLocaleString('es-CO')}`, bg: 'bg-yellow-50 border-yellow-100', small: true },
           ].map(stat => (
             <div key={stat.label} className={`${stat.bg} rounded-2xl border p-5`}>
@@ -395,7 +408,7 @@ export default function Ventas() {
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <div>
               <h2 className="text-base font-semibold text-gray-900">Historial de Ventas</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Ventas registradas del día</p>
+              <p className="text-xs text-gray-400 mt-0.5">{user?.rol === 'administrador' ? 'Historial completo de ventas' : 'Ventas registradas del día'}</p>
             </div>
             <button
               onClick={cargarDatos}
@@ -427,7 +440,7 @@ export default function Ventas() {
             </div>
           ) : historialAgrupado.length === 0 ? (
             <div className="py-14 text-center">
-              <p className="text-sm text-gray-500">No hay ventas registradas hoy</p>
+              <p className="text-sm text-gray-500">{user?.rol === 'administrador' ? 'No hay ventas registradas' : 'No hay ventas registradas hoy'}</p>
             </div>
           ) : (
             <>
@@ -476,11 +489,26 @@ export default function Ventas() {
                   </tbody>
                 </table>
               </div>
-              <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
-                <p className="text-xs text-gray-500">{historialAgrupado.length} ventas registradas hoy</p>
-                <p className="text-xs font-semibold text-gray-700">
-                  Total del día: <span className="text-green-700">${totalHoy.toLocaleString('es-CO')}</span>
+              <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between flex-wrap gap-2">
+                <p className="text-xs text-gray-500">
+                  {historialAgrupado.length} ventas registradas{user?.rol !== 'administrador' ? ' hoy' : ''}
                 </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-semibold text-gray-700 mr-2">
+                    Total{user?.rol !== 'administrador' ? ' del día' : ''}: <span className="text-green-700">${totalHoy.toLocaleString('es-CO')}</span>
+                  </p>
+                  <button
+                    onClick={() => setPagina(p => Math.max(1, p - 1))}
+                    disabled={pagina === 1}
+                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-sm font-bold"
+                  >‹</button>
+                  <span className="text-xs text-gray-600 font-medium px-1">{pagina} / {totalPaginas}</span>
+                  <button
+                    onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}
+                    disabled={pagina === totalPaginas}
+                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-sm font-bold"
+                  >›</button>
+                </div>
               </div>
             </>
           )}

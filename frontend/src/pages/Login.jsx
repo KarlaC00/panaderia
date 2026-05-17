@@ -56,7 +56,7 @@ export default function Login() {
               />
 
             <h1 className="text-2xl font-bold tracking-tight">
-              MAXIPAN
+              MAXICONTROL
             </h1>
 
             <p className="text-[#FED7AA] text-sm mt-1">
