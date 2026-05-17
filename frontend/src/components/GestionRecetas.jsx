@@ -78,8 +78,9 @@ export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
 
   const agregarIngredienteALista = (e) => {
     e.preventDefault();
-    if (!nuevoIngrediente.insumo_id || !nuevoIngrediente.cantidad) {
-      setMensaje({ texto: 'Selecciona un insumo y una cantidad válida', tipo: 'error' });
+    const cantidad = parseFloat(nuevoIngrediente.cantidad);
+    if (!nuevoIngrediente.insumo_id || !Number.isFinite(cantidad) || cantidad <= 0) {
+      setMensaje({ texto: 'Selecciona un insumo y una cantidad mayor a cero', tipo: 'error' });
       return;
     }
     if (ingredientesSeleccionados.find(i => String(i.insumo_id) === String(nuevoIngrediente.insumo_id))) {
@@ -117,6 +118,15 @@ export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
     e.preventDefault();
     if (!productoId || ingredientesSeleccionados.length === 0) {
       setMensaje({ texto: 'Debes elegir un producto y al menos un ingrediente', tipo: 'error' });
+      return;
+    }
+
+    const ingredienteInvalido = ingredientesSeleccionados.find((i) => {
+      const c = parseFloat(i.cantidad);
+      return !Number.isFinite(c) || c <= 0;
+    });
+    if (ingredienteInvalido) {
+      setMensaje({ texto: 'Todas las cantidades deben ser mayores a cero', tipo: 'error' });
       return;
     }
 
@@ -236,6 +246,8 @@ export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
           <input
             type="number"
             placeholder="Cant."
+            min="0.001"
+            step="any"
             style={{ ...inputStyle, width: '100px' }}
             value={nuevoIngrediente.cantidad}
             onChange={(e) => setNuevoIngrediente({ ...nuevoIngrediente, cantidad: e.target.value })}
@@ -265,6 +277,8 @@ export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
                     <td style={{ padding: '6px 8px' }}>
                       <input
                         type="number"
+                        min="0.001"
+                        step="any"
                         value={ing.cantidad}
                         onChange={(e) => actualizarCantidad(idx, e.target.value)}
                         style={{ width: '80px', padding: '4px', border: '1px solid #ccc', borderRadius: '4px' }}

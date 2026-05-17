@@ -72,6 +72,13 @@ export default function Ventas() {
 
   useEffect(() => { cargarDatos(pagina); }, [pagina]);
 
+  useEffect(() => {
+  const intervalo = setInterval(() => {
+    cargarDatos(pagina);
+  }, 30_000);
+  return () => clearInterval(intervalo);   // limpia al desmontar
+}, [pagina]);
+
   const cargarDatos = async (paginaActual = 1) => {
     setCargando(true);
     try {
@@ -100,51 +107,89 @@ export default function Ventas() {
     }
   };
 
+  const precioDelCatalogo = (productoId) => {
+    const p = productos.find(
+      (prod) => prod.id === productoId || Number(prod.id) === Number(productoId)
+    );
+    return Number(p?.precio_unitario ?? 0);
+  };
+
+  const carritoConPrecio = carrito.map((item) => ({
+    ...item,
+    precio_unitario: precioDelCatalogo(item.id),
+  }));
+
   const agregarAlCarrito = (prod) => {
+    const precio = Number(prod.precio_unitario ?? 0);
     const existe = carrito.find(item => item.id === prod.id);
     if (existe) {
       setCarrito(carrito.map(item =>
-        item.id === prod.id ? { ...item, cantidad_vender: item.cantidad_vender + 1 } : item
+        item.id === prod.id
+          ? { ...item, cantidad_vender: item.cantidad_vender + 1, precio_unitario: precio }
+          : item
       ));
     } else {
-      setCarrito([...carrito, { ...prod, cantidad_vender: 1, precio_unitario: Number(prod.precio_unitario ?? 0) }]);
+      setCarrito([...carrito, { ...prod, cantidad_vender: 1, precio_unitario: precio }]);
     }
   };
 
   const actualizarCantidadCarrito = (id, valor) => {
-    const num = Math.max(1, Number(valor));
+    const num = Math.max(1, Number(valor) || 1);
     setCarrito(carrito.map(item => item.id === id ? { ...item, cantidad_vender: num } : item));
   };
 
   const quitarDelCarrito = (id) => setCarrito(carrito.filter(item => item.id !== id));
 
-  const totalVenta = carrito.reduce((acc, item) => acc + (item.cantidad_vender * item.precio_unitario), 0);
+  const totalVenta = carritoConPrecio.reduce(
+    (acc, item) => acc + item.cantidad_vender * item.precio_unitario,
+    0
+  );
 
   const handleVender = async () => {
     if (carrito.length === 0) return;
-    const sinStock = carrito.find(item => item.cantidad_vender > item.stock_estimado);
+
+    const itemInvalido = carritoConPrecio.find(
+      (item) => !Number.isFinite(item.cantidad_vender) || item.cantidad_vender <= 0
+    );
+    if (itemInvalido) {
+      setMensaje({ texto: 'Cada producto debe tener una cantidad mayor a cero.', tipo: 'error' });
+      return;
+    }
+
+    const sinPrecio = carritoConPrecio.find(
+      (item) => !Number.isFinite(item.precio_unitario) || item.precio_unitario <= 0
+    );
+    if (sinPrecio) {
+      setMensaje({
+        texto: `El producto "${sinPrecio.nombre}" no tiene precio configurado. Actualiza el inventario.`,
+        tipo: 'error',
+      });
+      return;
+    }
+
+    const sinStock = carritoConPrecio.find(item => item.cantidad_vender > item.stock_estimado);
     if (sinStock) {
       if (!window.confirm(`Estás vendiendo más del stock disponible de "${sinStock.nombre}". ¿Deseas continuar?`)) return;
     }
     setProcesando(true);
     try {
-      const mapaPrecios = new Map(
-        productos.map((p) => [Number(p.id), Number(p.precio_unitario ?? 0)])
-      );
-      const itemsVenta = carrito.map((item) => {
-        const precioFijo = mapaPrecios.get(Number(item.id)) ?? Number(item.precio_unitario ?? 0);
-        return {
-          producto_id: item.id,
-          nombre_producto: item.nombre,
-          cantidad: item.cantidad_vender,
-          precio_unitario: precioFijo,
-        };
-      });
+      const itemsVenta = carritoConPrecio.map((item) => ({
+        producto_id: item.id,
+        nombre_producto: item.nombre,
+        cantidad: item.cantidad_vender,
+      }));
 
       await registrarVentaService({ items: itemsVenta });
       setMensaje({ texto: '¡Venta realizada con éxito!', tipo: 'success' });
       setCarrito([]);
+      try {
+        const inv = await getInventoryService();
+        setProductos(inv.productos || inv || []);
+      } catch {
+        /* el historial se actualiza al cambiar de página */
+      }
       setPagina(1);
+      await cargarDatos(1);
       setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000);
     } catch (err) {
       setMensaje({ texto: err.message, tipo: 'error' });
@@ -334,7 +379,7 @@ export default function Ventas() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {carrito.map(item => (
+                    {carritoConPrecio.map(item => (
                       <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3">
                           <span className="text-sm font-medium text-gray-900">{item.nombre}</span>

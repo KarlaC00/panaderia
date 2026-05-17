@@ -14,6 +14,13 @@ export default function RegistrarLote({ insumos, onLoteRegistrado }) {
     e.preventDefault();
     setLoading(true);
 
+    const cantidad = Number(formData.cantidad);
+    if (!Number.isFinite(cantidad) || cantidad <= 0) {
+      alert('⚠️ La cantidad debe ser un número mayor a cero.');
+      setLoading(false);
+      return;
+    }
+
     // Validación simple de fecha
     const hoy = new Date().toISOString().split('T')[0];
     if (formData.fecha_vencimiento < hoy) {
@@ -23,10 +30,9 @@ export default function RegistrarLote({ insumos, onLoteRegistrado }) {
     }
 
     try {
-      // Aseguramos que cantidad sea un número antes de enviar
       const dataAEnviar = {
         ...formData,
-        cantidad: Number(formData.cantidad)
+        cantidad,
       };
 
       await registrarLoteService(dataAEnviar);

@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { validarNoNegativo } = require('../utils/nonNegative');
 
 const listar = async (req, res) => {
   try {
@@ -33,6 +34,9 @@ const registrar = async (req, res) => {
   if (!insumo_id || !numero_lote || !cantidad || !fecha_vencimiento)
     return res.status(400).json({ error: 'insumo_id, numero_lote, cantidad y fecha_vencimiento son obligatorios' });
 
+  const errorCantidad = validarNoNegativo(cantidad, { permitirCero: false, nombreCampo: 'cantidad' });
+  if (!errorCantidad.valido) return res.status(400).json({ error: errorCantidad.error });
+
   if (new Date(fecha_vencimiento) < new Date())
     return res.status(400).json({ error: 'La fecha de vencimiento debe ser futura' });
 
@@ -44,7 +48,7 @@ const registrar = async (req, res) => {
     await client.query(
       `INSERT INTO lote (insumo_id, numero_lote, cantidad_inicial, cantidad_disponible, fecha_vencimiento)
        VALUES ($1, $2, $3, $3, $4)`,
-      [insumo_id, numero_lote, cantidad, fecha_vencimiento]
+      [insumo_id, numero_lote, errorCantidad.valor, fecha_vencimiento]
     );
 
     // 2. Actualizar stock_actual del insumo
@@ -59,7 +63,7 @@ const registrar = async (req, res) => {
     await client.query(
       `INSERT INTO movimiento_inventario (insumo_id, usuario_id, tipo, cantidad)
        VALUES ($1, $2, 'entrada', $3)`,
-      [insumo_id, req.usuario.id, cantidad]
+      [insumo_id, req.usuario.id, errorCantidad.valor]
     );
 
     // 4. Verificar si el stock ya superó el mínimo y resolver alerta si existe

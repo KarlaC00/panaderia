@@ -7,7 +7,7 @@ import { API_URLS, httpClient } from './api';
 const BASE = API_URLS.ventas; // Asegúrate que en api.js apunte al puerto 3002
 
 export async function registrarVentaService(datosVenta) {
-  // datosVenta debe ser: { items: [{ producto_id, cantidad, precio_unitario, nombre_producto }] }
+  // datosVenta: { items: [{ producto_id, cantidad, nombre_producto? }] } — el precio lo resuelve el servidor
   const res = await httpClient(`${BASE}/ventas`, {
     method: 'POST',
     body: JSON.stringify(datosVenta),

@@ -229,7 +229,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          MAXIPAN © {new Date().getFullYear()} · Sistema interno
+          MAXICONTROL © {new Date().getFullYear()} · Sistema interno
         </p>
 
       </div>

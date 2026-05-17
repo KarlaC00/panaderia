@@ -193,18 +193,25 @@ export default function Inventario() {
   const handleSave = async (e) => {
     e.preventDefault();
     try {
+      const stockMinimo = Number(newData.stock_minimo ?? 0);
+      if (!Number.isFinite(stockMinimo) || stockMinimo < 0) {
+        setMensaje({ texto: 'El stock mínimo no puede ser negativo', tipo: 'error' });
+        return;
+      }
+
       if (tab === 'productos') {
         const precio = Number(newData.precio_unitario);
         if (!Number.isFinite(precio) || precio < 0) {
-          setMensaje({ texto: 'Debes ingresar un precio unitario valido para el producto', tipo: 'error' });
+          setMensaje({ texto: 'Debes ingresar un precio unitario válido (no negativo) para el producto', tipo: 'error' });
           return;
         }
         await createProductService({
           ...newData,
           precio_unitario: precio,
+          stock_minimo: stockMinimo,
         });
       } else {
-        await createInsumoService(newData);
+        await createInsumoService({ ...newData, stock_minimo: stockMinimo });
       }
       setMensaje({ texto: 'Registrado con éxito', tipo: 'success' });
       setShowForm(false);
@@ -354,6 +361,7 @@ export default function Inventario() {
                       <InputField
                         label="Stock mínimo"
                         type="number"
+                        min="0"
                         placeholder="0"
                         value={newData.stock_minimo}
                         onChange={e => setNewData({ ...newData, stock_minimo: e.target.value })}

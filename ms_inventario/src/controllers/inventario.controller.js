@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { validarNoNegativo, primerError } = require('../utils/nonNegative');
 
 const listar = async (req, res) => {
   try {
@@ -50,6 +51,14 @@ const crearProducto = async (req, res) => {
   if (!nombre || !unidad_medida)
     return res.status(400).json({ error: 'nombre y unidad_medida son obligatorios' });
 
+  const errorValidacion = primerError([
+    precio_unitario != null
+      ? validarNoNegativo(precio_unitario, { nombreCampo: 'precio_unitario' })
+      : { valido: true },
+    validarNoNegativo(stock_minimo ?? 0, { nombreCampo: 'stock_minimo' }),
+  ]);
+  if (errorValidacion) return res.status(400).json({ error: errorValidacion.error });
+
   try {
     const result = await pool.query(
       `INSERT INTO producto (nombre, unidad_medida, precio_unitario, stock_minimo)
@@ -66,6 +75,16 @@ const crearProducto = async (req, res) => {
 const editarProducto = async (req, res) => {
   const { id } = req.params;
   const { nombre, unidad_medida, precio_unitario, stock_minimo, activo } = req.body;
+
+  const errorValidacion = primerError([
+    precio_unitario != null
+      ? validarNoNegativo(precio_unitario, { nombreCampo: 'precio_unitario' })
+      : { valido: true },
+    stock_minimo != null
+      ? validarNoNegativo(stock_minimo, { nombreCampo: 'stock_minimo' })
+      : { valido: true },
+  ]);
+  if (errorValidacion) return res.status(400).json({ error: errorValidacion.error });
 
   try {
     const existe = await pool.query('SELECT id FROM producto WHERE id = $1', [id]);
@@ -95,6 +114,9 @@ const crearInsumo = async (req, res) => {
   if (!nombre || !unidad_medida)
     return res.status(400).json({ error: 'nombre y unidad_medida son obligatorios' });
 
+  const errorValidacion = validarNoNegativo(stock_minimo ?? 0, { nombreCampo: 'stock_minimo' });
+  if (!errorValidacion.valido) return res.status(400).json({ error: errorValidacion.error });
+
   try {
     const result = await pool.query(
       `INSERT INTO insumo (nombre, unidad_medida, stock_minimo, stock_actual)
@@ -111,6 +133,11 @@ const crearInsumo = async (req, res) => {
 const editarInsumo = async (req, res) => {
   const { id } = req.params;
   const { nombre, unidad_medida, stock_minimo, activo } = req.body;
+
+  if (stock_minimo != null) {
+    const errorValidacion = validarNoNegativo(stock_minimo, { nombreCampo: 'stock_minimo' });
+    if (!errorValidacion.valido) return res.status(400).json({ error: errorValidacion.error });
+  }
 
   try {
     const existe = await pool.query('SELECT id FROM insumo WHERE id = $1', [id]);
@@ -159,6 +186,9 @@ const actualizarStockMinimo = async (req, res) => {
   const { tipo, stock_minimo } = req.body;
   if (!tipo || stock_minimo == null)
     return res.status(400).json({ error: 'tipo y stock_minimo son obligatorios' });
+
+  const errorValidacion = validarNoNegativo(stock_minimo, { nombreCampo: 'stock_minimo' });
+  if (!errorValidacion.valido) return res.status(400).json({ error: errorValidacion.error });
 
   const tabla = tipo === 'producto' ? 'producto' : 'insumo';
   try {

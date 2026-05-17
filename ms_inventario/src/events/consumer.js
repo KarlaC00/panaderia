@@ -11,6 +11,11 @@ const procesarVentaRegistrada = async (payload) => {
     for (const item of items) {
       const { productoId, cantidad } = item;
 
+      if (!Number.isFinite(Number(cantidad)) || Number(cantidad) <= 0) {
+        console.warn(`[inventario] Cantidad inválida (${cantidad}) para producto ${productoId}. Se omite.`);
+        continue;
+      }
+
       const recetas = await client.query(
         'SELECT id FROM receta WHERE producto_id = $1 AND activa = true LIMIT 1',
         [productoId]

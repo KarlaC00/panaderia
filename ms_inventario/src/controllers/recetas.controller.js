@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { validarNoNegativo } = require('../utils/nonNegative');
 
 const listar = async (req, res) => {
   try {
@@ -130,6 +131,15 @@ const crear = async (req, res) => {
     const recetaId = recetaResult.rows[0].id;
 
     for (const ins of insumos) {
+      const errorCantidad = validarNoNegativo(ins.cantidad_requerida, {
+        permitirCero: false,
+        nombreCampo: 'cantidad_requerida',
+      });
+      if (!errorCantidad.valido) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: errorCantidad.error });
+      }
+
       const existe = await client.query(
         `SELECT id
          FROM insumo
@@ -150,7 +160,7 @@ const crear = async (req, res) => {
         `INSERT INTO receta_insumo
          (receta_id, insumo_id, cantidad_requerida)
          VALUES ($1, $2, $3)`,
-        [recetaId, ins.insumo_id, ins.cantidad_requerida]
+        [recetaId, ins.insumo_id, errorCantidad.valor]
       );
     }
 
@@ -216,6 +226,15 @@ const actualizar = async (req, res) => {
 
     // insertar nuevos insumos
     for (const ins of insumos) {
+      const errorCantidad = validarNoNegativo(ins.cantidad_requerida, {
+        permitirCero: false,
+        nombreCampo: 'cantidad_requerida',
+      });
+      if (!errorCantidad.valido) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: errorCantidad.error });
+      }
+
       const insumoExiste = await client.query(
         `SELECT id
          FROM insumo
@@ -236,7 +255,7 @@ const actualizar = async (req, res) => {
         `INSERT INTO receta_insumo
          (receta_id, insumo_id, cantidad_requerida)
          VALUES ($1, $2, $3)`,
-        [recetaId, ins.insumo_id, ins.cantidad_requerida]
+        [recetaId, ins.insumo_id, errorCantidad.valor]
       );
     }
 
