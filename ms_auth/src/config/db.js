@@ -1,5 +1,5 @@
 const { Pool } = require('pg');
-require('dotenv').config();
+require('dotenv').config({ path: '/home/ubuntu/panaderia/ms_auth/.env' });require('dotenv').config();
 
 // En Postgres no se usa 'host', 'user', etc. dentro de un objeto mysql.createPool
 // Se usa la clase Pool de la librería 'pg'

@@ -32,7 +32,7 @@ export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
 
   const cargarRecetasExistentes = async () => {
     try {
-      const res = await fetch('http://localhost:3003/recetas', {
+      const res = await fetch('http://18.216.247.135/api/inventario/recetas', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.ok) {
@@ -52,7 +52,7 @@ export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
     setCargandoReceta(true);
     setMensaje({ texto: '', tipo: '' });
     try {
-      const res = await fetch(`http://localhost:3003/recetas/${id}`, {
+      const res = await fetch(`http://18.216.247.135/api/inventario/recetas/${id}`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.ok) {
@@ -140,8 +140,8 @@ export default function GestionRecetas({ productos, insumos, onRecetaCreada }) {
 
     const esEdicion = modo === 'editar';
     const url = esEdicion
-      ? `http://localhost:3003/recetas/${productoId}`
-      : 'http://localhost:3003/recetas';
+      ? `http://18.216.247.135/api/inventario/recetas/${productoId}`
+      : 'http://18.216.247.135/api/inventario/recetas';
     const method = esEdicion ? 'PUT' : 'POST';
 
     try {

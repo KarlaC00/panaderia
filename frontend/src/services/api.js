@@ -4,9 +4,9 @@
 // ─────────────────────────────────────────────────────────────
  
 export const API_URLS = {
-  auth:       'http://localhost:3001',
-  ventas:     'http://localhost:3002',
-  inventario: 'http://localhost:3003',
+  auth:       'http://18.216.247.135/api/auth',
+  ventas:     'http://18.216.247.135/api/ventas',
+  inventario: 'http://18.216.247.135/api/inventario',
 };
  
 // ── Helpers de localStorage ───────────────────────────────────
